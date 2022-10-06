@@ -22,6 +22,31 @@ function executeCommand(cmd, args, options) {
   });
 }
 
+function wait(number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function isNull(value) {
+  if (
+    typeof value === "undefined" ||
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return true;
+  }
+
+  if (typeof value === "string" && value.trim() === "") {
+    return true;
+  }
+
+  return false;
+}
+
 module.exports = {
   executeCommand,
+  wait,
+  isNull,
 };
