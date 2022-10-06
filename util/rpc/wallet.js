@@ -1,5 +1,5 @@
 const { executeCommand } = require("..");
-const { BITCOIN_CMD, RPC_OPTION, BTC_ADDR_TYPE } = require("../../static");
+const { BITCOIN_CMD, RPC_OPTION } = require("../../static");
 
 /**
  * 지갑 목록 조회

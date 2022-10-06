@@ -12,6 +12,7 @@ const {
   getAddressesByLabel,
   getAddressInfo,
 } = wallet;
+const { BTC_ADDR_TYPE } = require("./static");
 
 // 마지막 블록 데이터 조회 함수
 async function lastestBlockInfo() {
@@ -106,12 +107,13 @@ async function getAddressDetailInfo(wallet, label) {
     const addrObj = await getAddressesByLabel(wallet, label);
     const addresses = Object.keys(addrObj);
 
-    await Promise.all(
+    const addrDetails = await Promise.all(
       addresses.map(async (el) => {
-        const res = await getAddressInfo(wallet, el); // 지갑 상세 정보
-        console.log(res);
+        return await getAddressInfo(wallet, el); // 지갑 상세 정보
       })
     );
+
+    console.log("addrDetails : ", addrDetails);
   } catch (err) {
     console.error("[ERROR] : ", err);
   }
@@ -126,6 +128,6 @@ const PASS_PHASE =
 // makeWallet("test34", PASS_PHASE);
 
 // addWalletAddress("test34", "label21", BTC_ADDR_TYPE.BECH32);
-// addWalletAddress("test34", "label22", BTC_ADDR_TYPE.P2SH_SEGWIT);
+// addWalletAddress("test34", "label25", BTC_ADDR_TYPE.P2SH_SEGWIT);
 // addWalletAddress("test34", "label25", BTC_ADDR_TYPE.LEGACY);
 getAddressDetailInfo("test34", "label25");

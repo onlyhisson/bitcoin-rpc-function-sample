@@ -5,13 +5,13 @@ const decodedTxidInfo = {
   size: 1000, // 트랜잭션 사이즈
   vsize: 508, // 가장 트랜잭션 사이즈, witness 트랙잭션과 사이즈 다름
   weight: 2032, // vsize * 4 -3 ~ vsize * 4 사이
-  locktime: 0,
+  locktime: 0, // 거래 지연 시간, 0 이면 즉시로
   vin: [
     {
       txid: "5b4c99e42856bf7c0b0fee1407233ed2b9911735bd7a56d6548e366b31cd3dd9",
-      vout: 2, // output number
-      // 전자 서명, 송신자가 자신의 개인키로 이 transation 데이터에 서명한 것
-      // 이전 UTXO의 output에 Script pubKey로 잠긴 잠금 장치를 풀 수 있는 열쇠 역할
+      vout: 2, // output index, 2 는 세번째
+      // 전자 서명, 송신자가 자신의 개인키로 이 transaction 데이터에 서명한 것
+      // 이전 UTXO의 output에 Script pubKey로 잠긴 잠금 장치를 풀 수 있는 열쇠 역할, unlocking script
       scriptSig: {
         asm: "002063d3972aec2411ca7d281e5d0b6843fb9561cab93fa50a208e9deb20336a01e0",
         hex: "22002063d3972aec2411ca7d281e5d0b6843fb9561cab93fa50a208e9deb20336a01e0",
@@ -59,6 +59,7 @@ const decodedTxidInfo = {
     {
       value: 0.09704294,
       n: 0,
+      // 출력값을 사용할 수 있는 조건 명시, 수신자 만 열수 있는 스크립트, locking script
       scriptPubKey: {
         asm: "0 47db2a3bd6fb09b2a13a8e76e86785be0dbbbf70",
         hex: "001447db2a3bd6fb09b2a13a8e76e86785be0dbbbf70",
