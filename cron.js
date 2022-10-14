@@ -1,28 +1,21 @@
 require("dotenv").config();
 const CronJob = require("cron").CronJob;
 
-const { getConnection } = require("./db");
 const { getFormatDate, decodeBitcoinRawTx, debugLog } = require("./util");
+
+const { getConnection } = require("./db");
+const { saveBlockInfo, getDbLastBlockInfo } = require("./db/block");
+const {
+  completedTxDetailInfo,
+  saveTxidInfo,
+  getNotUpdatedTxid,
+} = require("./db/block_tx");
+const { saveTxInputInfo } = require("./db/tx_input");
+const { saveTxOutputInfo } = require("./db/tx_output");
+
 const { block, transaction, wallet } = require("./util/rpc");
 const { getBlockChainInfo, getBlockCount, getBlockHash, getBlock } = block;
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
-
-/*
-  from : [{a: 1}, {a: 2}, {b: 1}]
-  to : {a: [1, 2], b: [1]}
-*/
-function txidArrToObj(vins) {
-  const dupVinsTxs = vins.map((el) => el.txid);
-  const setVinsTxs = new Set(dupVinsTxs);
-  const vinsTx = [...setVinsTxs];
-  const vinsTxObjs = {};
-  vinsTx.map((tx) => {
-    const outObjs = vins.filter((el) => el.txid === tx);
-    const outIds = outObjs.map((el) => el.vout);
-    vinsTxObjs[tx] = outIds;
-  });
-  return vinsTxObjs;
-}
 
 // 코인베이스 트랜잭션 확인
 function checkCoinbase(vin) {
@@ -40,38 +33,6 @@ function checkCoinbase(vin) {
   }
   */
   return vin[0].coinbase ? true : false;
-}
-
-// 해당 트랜잭션의 input 정보 저장
-async function saveTxInputInfo(conn, params) {
-  const { txId, prevTxid, voutNo } = params;
-  const qry =
-    "INSERT INTO tx_input (txid_id, prev_txid, vout_no) VALUES ( ?, ?, ? );";
-  return new Promise(async (resolve, reject) => {
-    try {
-      await conn.execute(qry, [txId, prevTxid, Number(voutNo)]);
-      resolve(true);
-    } catch (err) {
-      debugLog("TX saveTxInputInfo ERROR - params", params, 20);
-      reject(err);
-    }
-  });
-}
-
-// 해당 트랜잭션의 output 정보 저장
-async function saveTxOutputInfo(conn, params) {
-  const { txId, amount, address, voutNo } = params;
-  const qry =
-    "INSERT INTO tx_output (txid_id, amount, address, vout_no) VALUES ( ?, ?, ?, ?);";
-  return new Promise(async (resolve, reject) => {
-    try {
-      await conn.execute(qry, [txId, amount, address, voutNo]);
-      resolve(true);
-    } catch (err) {
-      debugLog("TX saveTxOutputInfo ERROR - params", params, 20);
-      reject(err);
-    }
-  });
 }
 
 async function getTxidDetail(txid) {
@@ -107,75 +68,6 @@ async function getTxidDetail(txid) {
     debugLog("TX ERROR rawTxidData", rawTxidData.length, 20);
     throw err;
   }
-}
-
-// 디비에 저장된 마지막 블록 정보 조회
-async function getDbLastBlockInfo(conn) {
-  const qry =
-    "SELECT * FROM btc_wallet_dev.block_info ORDER BY id DESC LIMIT 1;";
-  return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry);
-    resolve(rows);
-  });
-}
-
-// 블록 정보 저장
-async function saveBlockInfo(conn, params) {
-  const { blockNum, nTx, time, createdAt } = params;
-  const qry =
-    "INSERT INTO block_info (block_no, tx_cnt, time, created_at) VALUES (?, ?, ?, ?)";
-  return new Promise(async (resolve, reject) => {
-    try {
-      await conn.execute(qry, [blockNum, nTx, time, createdAt]);
-      resolve(true);
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-// 특정 블록에 해당 하는 txid 저장
-async function saveTxidInfo(conn, params) {
-  const { txid, blockNum, createdAt } = params;
-  const qry =
-    "INSERT INTO block_tx (txid, block_no, created_at) VALUES (?, ?, ?)";
-  return new Promise(async (resolve, reject) => {
-    try {
-      await conn.execute(qry, [txid, blockNum, createdAt]);
-      resolve(true);
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-// 특정 블록에 해당 하는 txid 저장
-async function getNotUpdatedTxid(conn, cnt) {
-  let qry = "SELECT * FROM btc_wallet_dev.block_tx";
-  qry += ` WHERE updated_at IS NULL ORDER BY id ASC LIMIT ${cnt}`;
-
-  return new Promise(async (resolve, reject) => {
-    try {
-      const [rows] = await conn.execute(qry, []);
-      resolve(rows);
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-// 블록의 트랜잭션 정보 저장 완료
-async function completedTxDetailInfo(conn, params) {
-  const { id, time } = params;
-  const qry = " UPDATE block_tx SET updated_at = ? WHERE (`id` = ?)";
-  return new Promise(async (resolve, reject) => {
-    try {
-      const [rows] = await conn.execute(qry, [time, id]);
-      resolve(rows);
-    } catch (err) {
-      reject(err);
-    }
-  });
 }
 
 // cron func

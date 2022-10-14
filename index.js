@@ -38,7 +38,7 @@ app.get("/", async (req, res) => {
 
 app.use("/block", block);
 app.use("/wallet", wallet);
-app.use("/transaction", transaction);
+app.use("/tx", transaction);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
