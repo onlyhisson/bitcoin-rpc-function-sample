@@ -1,9 +1,8 @@
 require("dotenv").config();
-
 const CronJob = require("cron").CronJob;
 
 const { getConnection } = require("./db");
-const { getFormatDate } = require("./util");
+const { getFormatDate, decodeBitcoinRawTx, debugLog } = require("./util");
 const { block, transaction, wallet } = require("./util/rpc");
 const { getBlockChainInfo, getBlockCount, getBlockHash, getBlock } = block;
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
@@ -25,16 +24,35 @@ function txidArrToObj(vins) {
   return vinsTxObjs;
 }
 
+// 코인베이스 트랜잭션 확인
+function checkCoinbase(vin) {
+  /*
+  // 코인베이스 트랜잭션인 경우(각 블록의 첫번째 트랜잭션) vin 은 아래와 같음
+  vin: [
+    {
+      coinbase:
+      "032e930bfabe6d6d89e25de37ada5a77d45acecbceecdd525885cd5ea6194e393ac0350285340dbe0100000000000000306506088e3de100000000000000005d0176c7182f736c7573682f",
+      txinwitness: [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+      ],
+      sequence: 0,
+    }
+  }
+  */
+  return vin[0].coinbase ? true : false;
+}
+
 // 해당 트랜잭션의 input 정보 저장
 async function saveTxInputInfo(conn, params) {
   const { txId, prevTxid, voutNo } = params;
   const qry =
-    "INSERT INTO tx_input (tx_id, prev_txid, vout_no) VALUES ( ?, ?, ? );";
+    "INSERT INTO tx_input (txid_id, prev_txid, vout_no) VALUES ( ?, ?, ? );";
   return new Promise(async (resolve, reject) => {
     try {
-      await conn.execute(qry, [txId, prevTxid, voutNo]);
+      await conn.execute(qry, [txId, prevTxid, Number(voutNo)]);
       resolve(true);
     } catch (err) {
+      debugLog("TX saveTxInputInfo ERROR - params", params, 20);
       reject(err);
     }
   });
@@ -44,12 +62,13 @@ async function saveTxInputInfo(conn, params) {
 async function saveTxOutputInfo(conn, params) {
   const { txId, amount, address, voutNo } = params;
   const qry =
-    "INSERT INTO tx_output (tx_id, amount, address, vout_no) VALUES ( ?, ?, ?, ?);";
+    "INSERT INTO tx_output (txid_id, amount, address, vout_no) VALUES ( ?, ?, ?, ?);";
   return new Promise(async (resolve, reject) => {
     try {
       await conn.execute(qry, [txId, amount, address, voutNo]);
       resolve(true);
     } catch (err) {
+      debugLog("TX saveTxOutputInfo ERROR - params", params, 20);
       reject(err);
     }
   });
@@ -58,22 +77,35 @@ async function saveTxOutputInfo(conn, params) {
 async function getTxidDetail(txid) {
   try {
     const rawTxidData = await getRawTransaction(txid); // 트랙잭션 raw 데이터 조회
-    const decodeRawTxidData = await getDecodeRawTransaction(rawTxidData); // 디코딩
-    const { vin, vout } = decodeRawTxidData;
+    const decodeRawTxidData = decodeBitcoinRawTx(rawTxidData); // 디코딩
+    //const decodeRawTxidData = await getDecodeRawTransaction(rawTxidData); // 디코딩
+    const { vin, vout } = decodeRawTxidData; // 코인베이스 처리 필요, 2ac933f18ff3499dfa87185c69663bb5e9e49d3237f36020146f8cd9cbea2d33
+    const isCoinbase = checkCoinbase(vin);
 
-    const vins = vin.map((inOne) => ({
-      txid: inOne.txid,
-      vout: inOne.vout,
-    }));
+    if (vin.length < 1) {
+      debugLog("TX decodeRawTxidData", decodeRawTxidData, 20);
+    }
+
+    // coinbase 의 경우 데이터 객체 포맷이 다름
+    const vins =
+      vin.length < 1 || isCoinbase
+        ? []
+        : vin.map((inOne) => ({
+            txid: inOne.txid,
+            vout: inOne.vout,
+          }));
     const vouts = vout.map((outOne) => ({
       no: outOne.n,
       amount: outOne.value,
       address: outOne.scriptPubKey.address,
     }));
 
-    return { vins, vouts };
+    return { vins, vouts, isCoinbase };
   } catch (err) {
-    console.log("ERROR getTxidDetail : ", err);
+    debugLog("TX ERROR getTxidDetail", err, 20);
+    debugLog("TX ERROR txid", txid, 20);
+    debugLog("TX ERROR rawTxidData", rawTxidData.length, 20);
+    throw err;
   }
 }
 
@@ -149,14 +181,13 @@ async function completedTxDetailInfo(conn, params) {
 // cron func
 async function blockTxid() {
   let conn = null;
-  let updateBlockNum = 758160;
+  let updateBlockNum = 758450;
 
   const now = new Date().getTime();
   const createdAt = Math.round(now / 1000);
 
-  const fDate = getFormatDate(now);
-
-  console.log("\n[현재시간] : ", fDate);
+  console.log("");
+  debugLog("Block TX Start", "", 20);
 
   try {
     conn = await getConnection();
@@ -170,13 +201,14 @@ async function blockTxid() {
 
     const lastBlock = Number(await getBlockCount());
 
-    console.log("[메인넷 마지막 블록 넘버] : ", lastBlock);
-    console.log("[업데이트할 블록 넘버] : ", updateBlockNum);
+    debugLog("Block TX", `main net last block number (no.${lastBlock})`, 20);
 
     if (updateBlockNum > lastBlock) {
-      console.log("[상태] : 마지막 블록 까지 업데이트 됨");
+      debugLog("Block TX End", "last block info already updated", 20);
       return;
     }
+
+    debugLog("Block TX", `update block number (no.${updateBlockNum})`, 20);
 
     const blockHash = await getBlockHash(updateBlockNum); // 특정 블록 해시값
     const blockInfo = await getBlock(blockHash); // 특정 블록 정보
@@ -195,9 +227,9 @@ async function blockTxid() {
     await Promise.all(pSaveTx);
 
     await conn.commit(); // 트랜잭션 커밋
-    console.log(`[상태] : 블록 업데이트 (${updateBlockNum})`);
+    debugLog("Block TX End", `last block info update succeed`, 20);
   } catch (err) {
-    console.log("ERROR : ", err);
+    debugLog("Block TX ERROR blockTxid", err, 20);
     await conn.rollback(); // 트랜잭션 롤백
   } finally {
     if (conn) {
@@ -209,57 +241,74 @@ async function blockTxid() {
 // cron func
 async function txDetail() {
   let conn = null;
+  let inAllParams = [];
+  let outAllParams = [];
+
   try {
     conn = await getConnection();
     await conn.beginTransaction(); // 트랜잭션 시작
 
     // 처리하지 않은 txid(업데이트 컬럼 === NULL) 중에서 첫번째
-    const uTxids = await getNotUpdatedTxid(conn, 10);
+    const uTxids = await getNotUpdatedTxid(conn, 20);
     if (uTxids.length < 1) {
-      console.log("[트랜잭션] : 업데이트할 트랜잭션 없음");
+      //console.log("[트랜잭션] : 업데이트할 트랜잭션 없음");
       return;
     }
+
+    console.log("");
+    debugLog("TX Start", `Input & Output`, 20);
+    debugLog("TX Update List", uTxids, 20);
+
     const txidObjs = uTxids.map((el) => ({ id: el.id, txid: el.txid }));
     const pTxid = txidObjs.map(async (el) => {
       // txid 의 수신 정보 조회
       const detailTx = await getTxidDetail(el.txid);
-      const { vins, vouts } = detailTx;
+      const { vins, vouts, isCoinbase } = detailTx;
       return {
         ...el,
         vins,
         vouts,
+        isCoinbase,
       };
     });
 
     const txDetails = await Promise.all(pTxid);
 
     txDetails.map(async (el) => {
-      const { id, txid, vins, vouts } = el;
+      const { id, txid, vins, vouts, isCoinbase } = el;
+      //console.log("txid : ", txid);
       //console.log("vins : ", vins);
       //console.log("vouts : ", vouts);
-      /*
-      const pVins = vins.map((el) => {
-        const params = {
+      const inParams = vins.map((el) => {
+        return {
           txId: id,
           prevTxid: el.txid,
           voutNo: el.vout,
         };
-        return saveTxInputInfo(conn, params);
       });
-      */
-      const pVouts = vouts.map((el) => {
-        const params = {
+      const outParams = vouts.map((el) => {
+        return {
           txId: id,
           amount: el.amount,
           address: el.address || null,
           voutNo: el.no,
         };
-        return saveTxOutputInfo(conn, params);
       });
 
-      //await Promise.all(pVins);
-      //await Promise.all(pVouts);
+      inAllParams = [...inAllParams, ...inParams];
+      outAllParams = [...outAllParams, ...outParams];
     });
+
+    const pVins = inAllParams.map((el) => {
+      return saveTxInputInfo(conn, el);
+    });
+
+    const pVouts = outAllParams.map((el) => {
+      return saveTxOutputInfo(conn, el);
+    });
+
+    await Promise.all(pVins);
+    await Promise.all(pVouts);
 
     // 완료
     const now = new Date().getTime();
@@ -267,16 +316,17 @@ async function txDetail() {
 
     // todo : 회원 지갑 리스트 캐싱 최신화 확인
 
-    /*
     const pChkTxDetail = txDetails.map((el) =>
       // todo : txid 조회 - 회원 지갑과 관련 있는 경우 상세 내역 저장
       completedTxDetailInfo(conn, { time: createdAt, id: el.id })
     );
     await Promise.all(pChkTxDetail);
-*/
+
     await conn.commit(); // 트랜잭션 커밋
+
+    debugLog("TX END", `Input & Output`, 20);
   } catch (err) {
-    console.log("ERROR - txDetail : ", err);
+    debugLog("TX ERROR txDetail", err, 20);
     await conn.rollback(); // 트랜잭션 롤백
   } finally {
     if (conn) {
@@ -294,14 +344,8 @@ const blockTxidJob = new CronJob(
   "Asia/Seoul"
 );
 
-// 블록 정보 저장
-const txJob = new CronJob(
-  " */10 * * * * *",
-  txDetail,
-  null,
-  true,
-  "Asia/Seoul"
-);
+// 트랜잭션 정보 저장
+const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
 
 blockTxidJob.start();
 txJob.start();

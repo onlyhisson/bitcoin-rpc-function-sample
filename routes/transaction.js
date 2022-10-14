@@ -17,7 +17,28 @@ router.get("/:txid", async function (req, res) {
 
     res.json({
       success: true,
-      data: { txid: decodeRawTxidData },
+      data: decodeRawTxidData,
+    });
+  } catch (err) {
+    console.error("[ERROR] : ", err);
+
+    res.json({
+      success: false,
+      message: err.message ? err.message : "error",
+    });
+  }
+});
+
+// 해당 txid 의 input, output 정보
+router.get("/tx/:txid", async function (req, res) {
+  try {
+    const { txid } = req.params;
+
+    if (isNull(txid)) {
+      throw { message: `invalid parameter` };
+    }
+    res.json({
+      success: true,
     });
   } catch (err) {
     console.error("[ERROR] : ", err);

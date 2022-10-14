@@ -1,4 +1,5 @@
 const { spawn } = require("node:child_process");
+const { decodeRawTx } = require("./bitcoin");
 
 function executeCommand(cmd, args, options) {
   let bufferArray = [];
@@ -22,7 +23,7 @@ function executeCommand(cmd, args, options) {
   });
 }
 
-function wait(number) {
+function wait(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
@@ -46,7 +47,7 @@ function isNull(value) {
 }
 
 function getFormatDate(mill) {
-  const date = new Date(mill);
+  const date = mill ? new Date(mill) : new Date();
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
   const dd = date.getDate().toString().padStart(2, "0");
@@ -57,9 +58,18 @@ function getFormatDate(mill) {
   return `${year}-${month}-${dd} ${hour}:${min}:${sec}`;
 }
 
+function debugLog(label, content, pad = 20) {
+  const newLabel = label.padEnd(pad, " ");
+  const fTime = getFormatDate();
+  const newContent = content ? `: ${content}` : "";
+  console.log(`[ ${fTime} ] - ${newLabel}${newContent}`);
+}
+
 module.exports = {
   executeCommand,
   wait,
   isNull,
   getFormatDate,
+  decodeBitcoinRawTx: decodeRawTx,
+  debugLog,
 };
