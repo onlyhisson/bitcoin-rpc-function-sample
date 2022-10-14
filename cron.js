@@ -257,7 +257,11 @@ async function txDetail() {
 
     console.log("");
     debugLog("TX Start", `Input & Output`, 20);
-    debugLog("TX Update List", uTxids, 20);
+    debugLog(
+      "TX Update List",
+      `${uTxids[0].id} ~ ${uTxids[uTxids.length - 1].id}`,
+      20
+    );
 
     const txidObjs = uTxids.map((el) => ({ id: el.id, txid: el.txid }));
     const pTxid = txidObjs.map(async (el) => {

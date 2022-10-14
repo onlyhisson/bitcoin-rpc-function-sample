@@ -24,7 +24,7 @@ ORDER BY id DESC;
 
 -- 특정 블록에 해당하는 트랜잭션 리스트
 SELECT * FROM btc_wallet_dev.block_tx
-WHERE block_no=758234
+WHERE block_no=758595
 ORDER BY id DESC
 ;
 
