@@ -18,7 +18,7 @@ const { block, transaction, wallet } = require("./util/rpc");
 const { getBlockChainInfo, getBlockCount, getBlockHash, getBlock } = block;
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
 
-let updateTxOnce = 50;
+let updateTxOnce = 55;
 
 async function getTxidDetail(txid) {
   try {
@@ -140,11 +140,6 @@ async function txDetail() {
 
     console.log("");
     debugLog("TX Start", `Input & Output`, 20);
-    debugLog(
-      "TX Update List",
-      `${uTxids[0].id} ~ ${uTxids[uTxids.length - 1].id}`,
-      20
-    );
 
     const txidObjs = uTxids.map((el) => ({ id: el.id, txid: el.txid }));
     const pTxid = txidObjs.map(async (el) => {
@@ -215,11 +210,16 @@ async function txDetail() {
 
     await conn.commit(); // 트랜잭션 커밋
 
-    debugLog("TX END", `Input & Output`, 20);
+    debugLog(
+      "TX Update List",
+      `${uTxids[0].id} ~ ${uTxids[uTxids.length - 1].id}`,
+      20
+    );
   } catch (err) {
     debugLog("TX ERROR txDetail", err, 20);
     await conn.rollback(); // 트랜잭션 롤백
   } finally {
+    debugLog("TX END", `Input & Output`, 20);
     if (conn) {
       await conn.release();
     }
@@ -254,7 +254,11 @@ const blockTxidJob = new CronJob(
 );
 
 // 트랜잭션 정보 저장
-const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
+//const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
 
 blockTxidJob.start();
-txJob.start();
+//txJob.start();
+
+setInterval(() => {
+  txDetail();
+}, 1000);
