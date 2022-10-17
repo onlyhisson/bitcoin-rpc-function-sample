@@ -27,6 +27,29 @@ async function saveTxidInfo(conn, params) {
   });
 }
 
+// 특정 블록에 해당 하는 txid 저장 - bulk insert
+async function saveTxidInfos(conn, params) {
+  let paramArr = [];
+  params.forEach((el) => {
+    const { txid, blockNum, createdAt } = el;
+    paramArr = [...paramArr, txid, blockNum, createdAt];
+  });
+
+  let qry = "INSERT INTO block_tx (txid, block_no, created_at)";
+  for (let i = 0; i < params.length; i++) {
+    qry += i === 0 ? " VALUES (?, ?, ?) " : ", (?, ?, ?) ";
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      await conn.execute(qry, paramArr);
+      resolve(true);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 // input output 데이터 확인되지 않은 트랜잭션 row 조회
 async function getNotUpdatedTxid(conn, cnt) {
   let qry = "SELECT * FROM btc_wallet_dev.block_tx";
@@ -55,6 +78,7 @@ async function findTxidIdByTxid(conn, params) {
 module.exports = {
   completedTxDetailInfo,
   saveTxidInfo,
+  saveTxidInfos,
   getNotUpdatedTxid,
   findTxidIdByTxid,
 };

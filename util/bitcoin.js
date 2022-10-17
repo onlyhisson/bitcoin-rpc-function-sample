@@ -75,9 +75,9 @@ function decodeRawTx(rawTx) {
         : getAddress(txid, el.script);
 
     if (asm.split(" ")[0] === "OP_RETURN") {
-      console.log("txid : ", txid);
-      console.log("asm : ", asm);
-      console.log("asm : ", asm.split(" ")[0]);
+      // console.log("txid : ", txid);
+      // console.log("asm : ", asm);
+      // console.log("asm : ", asm.split(" ")[0]);
     }
 
     return {

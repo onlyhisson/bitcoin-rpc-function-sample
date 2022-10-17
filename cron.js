@@ -8,6 +8,7 @@ const { saveBlockInfo, getDbLastBlockInfo } = require("./db/block");
 const {
   completedTxDetailInfo,
   saveTxidInfo,
+  saveTxidInfos,
   getNotUpdatedTxid,
 } = require("./db/block_tx");
 const { saveTxInputInfo } = require("./db/tx_input");
@@ -17,23 +18,7 @@ const { block, transaction, wallet } = require("./util/rpc");
 const { getBlockChainInfo, getBlockCount, getBlockHash, getBlock } = block;
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
 
-// 코인베이스 트랜잭션 확인
-function checkCoinbase(vin) {
-  /*
-  // 코인베이스 트랜잭션인 경우(각 블록의 첫번째 트랜잭션) vin 은 아래와 같음
-  vin: [
-    {
-      coinbase:
-      "032e930bfabe6d6d89e25de37ada5a77d45acecbceecdd525885cd5ea6194e393ac0350285340dbe0100000000000000306506088e3de100000000000000005d0176c7182f736c7573682f",
-      txinwitness: [
-        "0000000000000000000000000000000000000000000000000000000000000000",
-      ],
-      sequence: 0,
-    }
-  }
-  */
-  return vin[0].coinbase ? true : false;
-}
+let updateTxOnce = 40;
 
 async function getTxidDetail(txid) {
   try {
@@ -112,11 +97,17 @@ async function blockTxid() {
     await saveBlockInfo(conn, { blockNum, nTx, time, createdAt });
 
     // 각 블록의 txid 저장
+    /*
     const pSaveTx = tx.map((el) =>
       saveTxidInfo(conn, { txid: el, blockNum, createdAt })
     );
 
     await Promise.all(pSaveTx);
+    */
+
+    const txParams = tx.map((el) => ({ txid: el, blockNum, createdAt }));
+
+    await saveTxidInfos(conn, txParams);
 
     await conn.commit(); // 트랜잭션 커밋
     debugLog("Block TX End", `last block info update succeed`, 20);
@@ -141,7 +132,7 @@ async function txDetail() {
     await conn.beginTransaction(); // 트랜잭션 시작
 
     // 처리하지 않은 txid(업데이트 컬럼 === NULL) 중에서 첫번째
-    const uTxids = await getNotUpdatedTxid(conn, 20);
+    const uTxids = await getNotUpdatedTxid(conn, updateTxOnce);
     if (uTxids.length < 1) {
       //console.log("[트랜잭션] : 업데이트할 트랜잭션 없음");
       return;
@@ -229,6 +220,24 @@ async function txDetail() {
       await conn.release();
     }
   }
+}
+
+// 코인베이스 트랜잭션 확인
+function checkCoinbase(vin) {
+  /*
+  // 코인베이스 트랜잭션인 경우(각 블록의 첫번째 트랜잭션) vin 은 아래와 같음
+  vin: [
+    {
+      coinbase:
+      "032e930bfabe6d6d89e25de37ada5a77d45acecbceecdd525885cd5ea6194e393ac0350285340dbe0100000000000000306506088e3de100000000000000005d0176c7182f736c7573682f",
+      txinwitness: [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+      ],
+      sequence: 0,
+    }
+  }
+  */
+  return vin[0].coinbase ? true : false;
 }
 
 // 블록 정보 저장

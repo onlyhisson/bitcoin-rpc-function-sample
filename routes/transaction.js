@@ -155,9 +155,6 @@ async function findPrevTxOutputByTxInput(conn, inputs) {
 
 // amount 합 리듀스
 function reduceSumBigAmount(pInput, cInput) {
-  console.log("pInput : ", pInput);
-  console.log("cInput : ", cInput);
-
   const x =
     typeof pInput === "object" ? new Big(pInput.amount) : new Big(pInput);
   const y = new Big(cInput.amount);
