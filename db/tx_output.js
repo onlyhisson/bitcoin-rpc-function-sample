@@ -16,6 +16,30 @@ async function saveTxOutputInfo(conn, params) {
   });
 }
 
+// 해당 트랜잭션의 output 정보 저장 - bulk insert
+async function saveTxOutputInfos(conn, params) {
+  let paramArr = [];
+  params.forEach((el) => {
+    const { txId, amount, address, voutNo } = el;
+    paramArr = [...paramArr, txId, amount, address, voutNo];
+  });
+
+  let qry = "INSERT INTO tx_output (txid_id, amount, address, vout_no)";
+  for (let i = 0; i < params.length; i++) {
+    qry += i === 0 ? " VALUES ( ?, ?, ?, ?) " : ", ( ?, ?, ?, ?)  ";
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      await conn.execute(qry, paramArr);
+      resolve(true);
+    } catch (err) {
+      debugLog("TX saveTxOutputInfo ERROR - params", params, 20);
+      reject(err);
+    }
+  });
+}
+
 async function findTxOutputByTxidId(conn, params) {
   const { txidId } = params;
   const qry = "SELECT * FROM btc_wallet_dev.tx_output WHERE txid_id = ? ";
@@ -29,4 +53,4 @@ async function findTxOutputByTxidId(conn, params) {
   });
 }
 
-module.exports = { saveTxOutputInfo, findTxOutputByTxidId };
+module.exports = { saveTxOutputInfo, saveTxOutputInfos, findTxOutputByTxidId };

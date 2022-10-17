@@ -11,14 +11,14 @@ const {
   saveTxidInfos,
   getNotUpdatedTxid,
 } = require("./db/block_tx");
-const { saveTxInputInfo } = require("./db/tx_input");
-const { saveTxOutputInfo } = require("./db/tx_output");
+const { saveTxInputInfo, saveTxInputInfos } = require("./db/tx_input");
+const { saveTxOutputInfo, saveTxOutputInfos } = require("./db/tx_output");
 
 const { block, transaction, wallet } = require("./util/rpc");
 const { getBlockChainInfo, getBlockCount, getBlockHash, getBlock } = block;
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
 
-let updateTxOnce = 40;
+let updateTxOnce = 50;
 
 async function getTxidDetail(txid) {
   try {
@@ -186,16 +186,20 @@ async function txDetail() {
       outAllParams = [...outAllParams, ...outParams];
     });
 
+    /*
     const pVins = inAllParams.map((el) => {
       return saveTxInputInfo(conn, el);
     });
-
+    
     const pVouts = outAllParams.map((el) => {
       return saveTxOutputInfo(conn, el);
     });
-
+    
     await Promise.all(pVins);
     await Promise.all(pVouts);
+    */
+    await saveTxInputInfos(conn, inAllParams);
+    await saveTxOutputInfos(conn, outAllParams);
 
     // 완료
     const now = new Date().getTime();
