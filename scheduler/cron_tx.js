@@ -12,6 +12,7 @@ const { transaction } = require("../util/rpc");
 const { getRawTransaction } = transaction;
 
 const UPDATE_TX_ONCE = 55; // 한번 요청에 처리할 tx 개수
+let updatedLastTxId = 0;
 
 // cron func
 async function txDetail() {
@@ -23,12 +24,19 @@ async function txDetail() {
     conn = await getConnection();
     await conn.beginTransaction(); // 트랜잭션 시작
 
+    const startMil = new Date().getTime();
+
     // 처리하지 않은 txid(업데이트 컬럼 === NULL) 중에서 첫번째
-    const uTxids = await getNotUpdatedTxid(conn, UPDATE_TX_ONCE);
+    const uTxids = await getNotUpdatedTxid(conn, {
+      lastIdx: updatedLastTxId,
+      limit: UPDATE_TX_ONCE,
+    }); // (A)
     if (uTxids.length < 1) {
       //console.log("[트랜잭션] : 업데이트할 트랜잭션 없음");
       return;
     }
+
+    const mill1 = new Date().getTime();
 
     console.log("");
     debugLog("TX Start", `Input & Output`, 20);
@@ -47,6 +55,8 @@ async function txDetail() {
     });
 
     const txDetails = await Promise.all(pTxid);
+
+    const mill2 = new Date().getTime();
 
     txDetails.map(async (el) => {
       const { id, txid, vins, vouts, isCoinbase } = el;
@@ -73,20 +83,10 @@ async function txDetail() {
       outAllParams = [...outAllParams, ...outParams];
     });
 
-    /*
-    const pVins = inAllParams.map((el) => {
-      return saveTxInputInfo(conn, el);
-    });
-    
-    const pVouts = outAllParams.map((el) => {
-      return saveTxOutputInfo(conn, el);
-    });
-    
-    await Promise.all(pVins);
-    await Promise.all(pVouts);
-    */
     await saveTxInputInfos(conn, inAllParams);
     await saveTxOutputInfos(conn, outAllParams);
+
+    const mill3 = new Date().getTime();
 
     // 완료
     const now = new Date().getTime();
@@ -102,11 +102,21 @@ async function txDetail() {
 
     await conn.commit(); // 트랜잭션 커밋
 
+    const mill4 = new Date().getTime();
+
+    console.log("txid 업데이트 안된 것 조회 시간 : ", mill1 - startMil);
+    console.log("bitcoin-cli rawtransaction 요청 : ", mill2 - mill1);
+    console.log("input output 저장 : ", mill3 - mill2);
+    console.log("완료된 txid 확인 처리 : ", mill4 - mill3);
+
     debugLog(
       "TX Update List",
       `${uTxids[0].id} ~ ${uTxids[uTxids.length - 1].id}`,
       20
     );
+
+    // 업데이트된 마지막 txid 인덱스 번호저장, 조회 쿼리 빠르게 (A)
+    updatedLastTxId = uTxids[uTxids.length - 1].id;
   } catch (err) {
     debugLog("TX ERROR txDetail", err, 20);
     await conn.rollback(); // 트랜잭션 롤백
