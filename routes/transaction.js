@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const Big = require("big.js");
+
 const { isNull } = require("../util");
 const { block, transaction, wallet } = require("../util/rpc");
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
@@ -61,12 +63,17 @@ router.get("/inout/:txid", async function (req, res) {
     const txOutputs = await findTxOutputByTxidId(conn, { txidId });
 
     if (txInputs.length > 0) {
-      nTxInputs = txInputs.map((el) => ({
+      const nInputs = txInputs.map((el) => ({
         txid: el.prev_txid,
         voutIdx: el.vout_no,
       }));
-      console.log("nTxInputs1 : ", nTxInputs);
-      console.log("nTxInputs2 : ", txidArrToObj(nTxInputs));
+      console.log("nInputs : ", nInputs);
+      const inputAddrAmt = await findPrevTxOutputByTxInput(conn, nInputs);
+      console.log("inputAddrAmt : ", inputAddrAmt);
+      nTxInputs = inputAddrAmt.map((el) => ({
+        amount: el.amount,
+        address: el.address,
+      }));
     }
 
     if (txOutputs.length > 0) {
@@ -75,13 +82,18 @@ router.get("/inout/:txid", async function (req, res) {
         address: el.address,
         amount: el.amount,
       }));
-      console.log("nTxOutputs : ", nTxOutputs);
+      //console.log("nTxOutputs : ", nTxOutputs);
     }
+
+    const inputAmtSum = nTxInputs.reduce(reduceSumBigAmount, 0);
+    const outputAmtSum = nTxOutputs.reduce(reduceSumBigAmount, 0);
+    const fee = new Big(inputAmtSum).minus(new Big(outputAmtSum)).toFixed(8);
 
     res.json({
       success: true,
       data: {
         txid,
+        fee,
         input: nTxInputs,
         output: nTxOutputs,
       },
@@ -113,6 +125,43 @@ function txidArrToObj(vins) {
     vinsTxObjs[tx] = outIds;
   });
   return vinsTxObjs;
+}
+
+async function findPrevTxOutputByTxInput(conn, inputs) {
+  let newInputs = [];
+
+  try {
+    const inputTxids = inputs.map((el) => el.txid);
+    const inputObjs = txidArrToObj(inputs);
+    console.log("inputObjs : ", inputObjs);
+
+    const pInputTxids = inputTxids.map(async (txid) => {
+      const txidObjs = await findTxidIdByTxid(conn, { txid });
+      const iTxidId = txidObjs[0].id;
+      const outs = await findTxOutputByTxidId(conn, { txidId: iTxidId });
+      const outsFilter = outs.filter((out) =>
+        inputObjs[txid].includes(out.vout_no)
+      );
+      newInputs = [...newInputs, ...outsFilter];
+    });
+
+    await Promise.all(pInputTxids);
+
+    return newInputs;
+  } catch (err) {
+    throw err;
+  }
+}
+
+// amount 합 리듀스
+function reduceSumBigAmount(pInput, cInput) {
+  console.log("pInput : ", pInput);
+  console.log("cInput : ", cInput);
+
+  const x =
+    typeof pInput === "object" ? new Big(pInput.amount) : new Big(pInput);
+  const y = new Big(cInput.amount);
+  return x.plus(y).toFixed(8);
 }
 
 module.exports = router;

@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "big.js": "^6.2.1",
     "bitcoin-core": "^4.1.0",
     "bitcoinjs-lib": "^6.0.2",
     "body-parser": "^1.20.0",

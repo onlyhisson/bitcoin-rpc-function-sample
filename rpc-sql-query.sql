@@ -43,7 +43,8 @@ WHERE block_no=758234
 -- 업데이트 된 트랜잭션 개수
 SELECT COUNT(*)
 FROM btc_wallet_dev.block_tx
-WHERE updated_at IS NOT NULL
+-- WHERE updated_at IS NOT NULL
+WHERE updated_at IS NULL
 ORDER BY id DESC
 ;
 
