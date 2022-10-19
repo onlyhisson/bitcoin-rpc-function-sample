@@ -10,6 +10,8 @@ const { saveTxidInfos } = require("../db/block_tx");
 const { block } = require("../util/rpc");
 const { getBlockCount, getBlockHash, getBlock } = block;
 
+const { cronCache } = require("./");
+
 // cron func
 async function blockTxid() {
   let conn = null;
@@ -22,6 +24,13 @@ async function blockTxid() {
   debugLog("Block TX Start", "", 20);
 
   try {
+    const walletList = cronCache.get("walletList");
+    if (walletList === undefined || walletList.length < 1) {
+      debugLog("Block TX ERROR", "Please update Wallet List", 20);
+    }
+
+    debugLog("Block TX", `Wallet Count [ ${walletList.length} ]`, 20);
+
     conn = await getConnection();
 
     const rows = await getDbLastBlockInfo(conn);
