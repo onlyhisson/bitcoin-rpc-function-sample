@@ -28,6 +28,22 @@ async function completedTxDetailInfos(conn, params) {
   });
 }
 
+// 관리하는 트랜잭션인 경우 확인 - 한번에 처리
+async function updatedOurTx(conn, params) {
+  const { ids } = params;
+  const idJoin = ids.join(",");
+  const qry = ` UPDATE block_tx SET is_bitstoa = 1 WHERE id IN(${idJoin})`;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const [rows] = await conn.execute(qry, []);
+      resolve(rows);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 // 특정 블록에 해당 하는 txid 저장
 async function saveTxidInfo(conn, params) {
   const { txid, blockNum, createdAt } = params;
@@ -103,4 +119,5 @@ module.exports = {
   saveTxidInfos,
   getNotUpdatedTxid,
   findTxidIdByTxid,
+  updatedOurTx,
 };

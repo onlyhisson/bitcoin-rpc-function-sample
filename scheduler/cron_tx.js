@@ -8,6 +8,7 @@ const {
   completedTxDetailInfo,
   completedTxDetailInfos,
   getNotUpdatedTxid,
+  updatedOurTx,
 } = require("../db/block_tx");
 const { saveTxInputInfos } = require("../db/tx_input");
 const { saveTxOutputInfos } = require("../db/tx_output");
@@ -15,16 +16,26 @@ const { saveTxOutputInfos } = require("../db/tx_output");
 const { transaction } = require("../util/rpc");
 const { getRawTransaction } = transaction;
 
+const { cronCache } = require("./");
+
 const UPDATE_TX_ONCE = 55; // 한번 요청에 처리할 tx 개수
 let updatedLastTxId = 0;
 
 // cron func
 async function txDetail() {
   let conn = null;
+  let ourTxidId = [];
   let inAllParams = [];
   let outAllParams = [];
 
   try {
+    // 관리하는 지갑 목록 조회
+    const walletList = cronCache.get("walletList");
+    if (walletList === undefined || walletList.length < 1) {
+      debugLog("TX ERROR", "Please update Wallet List", 20);
+      return;
+    }
+
     conn = await getConnection();
     await conn.beginTransaction(); // 트랜잭션 시작
 
@@ -44,17 +55,17 @@ async function txDetail() {
 
     console.log("");
     debugLog("TX Start", `Input & Output`, 20);
+    debugLog("TX", `Wallet Address Count [ ${walletList.length} ]`, 20);
 
     const txidObjs = uTxids.map((el) => ({ id: el.id, txid: el.txid }));
     const pTxid = txidObjs.map(async (el) => {
       // txid 의 수신 정보 조회
       const detailTx = await getTxidDetail(el.txid);
-      const { vins, vouts, isCoinbase } = detailTx;
+      const { vins, vouts } = detailTx;
       return {
         ...el,
         vins,
         vouts,
-        isCoinbase,
       };
     });
 
@@ -63,10 +74,24 @@ async function txDetail() {
     const mill2 = new Date().getTime();
 
     txDetails.map(async (el) => {
-      const { id, txid, vins, vouts, isCoinbase } = el;
+      let chk = false;
+      const { id, txid, vins, vouts } = el;
       //console.log("txid : ", txid);
       //console.log("vins : ", vins);
-      //console.log("vouts : ", vouts);
+      const outAddrs = vouts.map((el) => el.address);
+      outAddrs.forEach((el) => {
+        if (walletList.includes(el)) {
+          chk = true;
+        }
+      });
+
+      // 관리하는 주소만 데이터 저장
+      if (chk) {
+        ourTxidId.push(id);
+        // todo : 아래 내용 모두 포함해야함
+      }
+
+      // 여기부터
       const inParams = vins.map((el) => {
         return {
           txId: id,
@@ -85,10 +110,15 @@ async function txDetail() {
 
       inAllParams = [...inAllParams, ...inParams];
       outAllParams = [...outAllParams, ...outParams];
+      // 여기까지
     });
 
-    await saveTxInputInfos(conn, inAllParams);
-    await saveTxOutputInfos(conn, outAllParams);
+    if (inAllParams.length > 0) {
+      await saveTxInputInfos(conn, inAllParams);
+    }
+    if (outAllParams.length > 0) {
+      await saveTxOutputInfos(conn, outAllParams);
+    }
 
     const mill3 = new Date().getTime();
 
@@ -96,25 +126,14 @@ async function txDetail() {
     const now = new Date().getTime();
     const createdAt = Math.round(now / 1000);
 
-    // todo : 회원 지갑 리스트 캐싱 최신화 확인
-
-    /*
-    const pChkTxDetail = txDetails.map((el) =>
-      // todo : txid 조회 - 회원 지갑과 관련 있는 경우 상세 내역 저장
-      completedTxDetailInfo(conn, { time: createdAt, id: el.id })
-    );
-    await Promise.all(pChkTxDetail);
-  */
     const txIdIds = txDetails.map((el) => el.id);
     await completedTxDetailInfos(conn, { time: createdAt, ids: txIdIds });
+    if (ourTxidId.length > 0) {
+      await updatedOurTx(conn, { ids: ourTxidId });
+    }
     await conn.commit(); // 트랜잭션 커밋
 
     const mill4 = new Date().getTime();
-
-    console.log("txid 업데이트 안된 것 조회 시간 : ", mill1 - startMil);
-    console.log("bitcoin-cli rawtransaction 요청 : ", mill2 - mill1);
-    console.log("input output 저장 : ", mill3 - mill2);
-    console.log("완료된 txid 확인 처리 : ", mill4 - mill3);
 
     debugLog(
       "TX Update List",
@@ -126,7 +145,22 @@ async function txDetail() {
     updatedLastTxId = uTxids[uTxids.length - 1].id;
 
     debugLog("TX END", `Input & Output`, 20);
+
+    console.log();
+    const time1 = `${(mill1 - startMil).toString().padStart(4, " ")} ms`;
+    const time2 = `${(mill2 - mill1).toString().padStart(4, " ")} ms`;
+    const time3 = `${(mill3 - mill2).toString().padStart(4, " ")} ms`;
+    const time4 = `${(mill4 - mill3).toString().padStart(4, " ")} ms`;
+    // 업데이트 안된 tx 조회 걸린 시간
+    debugLog("TX TXID updated_at NULL", time1, 30);
+    // bitcoin-cli 에 tx 정보 조회 요청 시간
+    debugLog("TX bitcoin-cli raw tx", time2, 30);
+    // 해당 트랜잭션 input output 데이터 저장 시간
+    debugLog("TX save input & output", time3, 30);
+    // 해당 트랜잭션 확인 처리 시간
+    debugLog("TX TXID updated check", time4, 30);
   } catch (err) {
+    console.log(err);
     debugLog("TX ERROR txDetail", err, 20);
     await conn.rollback(); // 트랜잭션 롤백
   } finally {
@@ -162,7 +196,7 @@ async function getTxidDetail(txid) {
       address: outOne.scriptPubKey.address,
     }));
 
-    return { vins, vouts, isCoinbase };
+    return { vins, vouts };
   } catch (err) {
     debugLog("TX ERROR getTxidDetail", err, 20);
     debugLog("TX ERROR txid", txid, 20);
