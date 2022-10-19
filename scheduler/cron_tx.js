@@ -4,7 +4,11 @@ const CronJob = require("cron").CronJob;
 const { decodeBitcoinRawTx, debugLog } = require("../util");
 
 const { getConnection } = require("../db");
-const { completedTxDetailInfo, getNotUpdatedTxid } = require("../db/block_tx");
+const {
+  completedTxDetailInfo,
+  completedTxDetailInfos,
+  getNotUpdatedTxid,
+} = require("../db/block_tx");
 const { saveTxInputInfos } = require("../db/tx_input");
 const { saveTxOutputInfos } = require("../db/tx_output");
 
@@ -94,12 +98,15 @@ async function txDetail() {
 
     // todo : 회원 지갑 리스트 캐싱 최신화 확인
 
+    /*
     const pChkTxDetail = txDetails.map((el) =>
       // todo : txid 조회 - 회원 지갑과 관련 있는 경우 상세 내역 저장
       completedTxDetailInfo(conn, { time: createdAt, id: el.id })
     );
     await Promise.all(pChkTxDetail);
-
+  */
+    const txIdIds = txDetails.map((el) => el.id);
+    await completedTxDetailInfos(conn, { time: createdAt, ids: txIdIds });
     await conn.commit(); // 트랜잭션 커밋
 
     const mill4 = new Date().getTime();

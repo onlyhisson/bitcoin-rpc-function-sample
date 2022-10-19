@@ -12,6 +12,22 @@ async function completedTxDetailInfo(conn, params) {
   });
 }
 
+// 블록의 트랜잭션 정보 저장 완료 - 한번에 처리
+async function completedTxDetailInfos(conn, params) {
+  const { time, ids } = params;
+  const idJoin = ids.join(",");
+  const qry = ` UPDATE block_tx SET updated_at = ? WHERE id IN(${idJoin})`;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const [rows] = await conn.execute(qry, [time]);
+      resolve(rows);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 // 특정 블록에 해당 하는 txid 저장
 async function saveTxidInfo(conn, params) {
   const { txid, blockNum, createdAt } = params;
@@ -81,6 +97,7 @@ async function findTxidIdByTxid(conn, params) {
 
 module.exports = {
   completedTxDetailInfo,
+  completedTxDetailInfos,
   saveTxidInfo,
   saveTxidInfos,
   getNotUpdatedTxid,
