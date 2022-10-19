@@ -60,3 +60,34 @@ FROM btc_wallet_dev.block_tx
 WHERE id = 257275
 ;
 
+
+-- 지갑 테스트 정보 저장
+SELECT ROUND(UNIX_TIMESTAMP(CURTIME(4)) * 1000);
+SELECT ROUND(UNIX_TIMESTAMP()), ROUND(UNIX_TIMESTAMP(CURTIME(4)));
+SELECT UNIX_TIMESTAMP();
+
+INSERT INTO btc_wallet_dev.wallet_info (`name`, label, `desc`, created_at) VALUES('test30', 'label1', '테스트', UNIX_TIMESTAMP());
+INSERT INTO btc_wallet_dev.wallet_info (`name`, `desc`, created_at) VALUES('test30', '테스트', UNIX_TIMESTAMP());
+INSERT INTO btc_wallet_dev.wallet_info (`name`, label, `desc`, created_at) VALUES('test30', 'label3', '테스트', UNIX_TIMESTAMP());
+
+
+-- 테스트 주소 저장
+INSERT INTO btc_wallet_dev.wallet_address 
+(wallet_id, address, created_at, updated_at) 
+VALUES (1, '3Lwck9afyZvHyU3VVdPfKD4YuDY7YeGhrv', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+
+INSERT INTO btc_wallet_dev.wallet_address 
+(wallet_id, address, created_at, updated_at) 
+VALUES (2, 'bc1qh3fq42rnl7vvvkrdl7wd6530u3sfp302njw92c', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+
+INSERT INTO btc_wallet_dev.wallet_address 
+(wallet_id, address, created_at, updated_at) 
+VALUES (3, '1AXPfuEGf7boD21WAKvyR1d81mc3EEZKSv', UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+
+SELECT 
+	wi.name,
+	wi.label,
+	wa.address 
+FROM btc_wallet_dev.wallet_address wa
+INNER JOIN btc_wallet_dev.wallet_info wi
+ON wa.wallet_id = wi.id

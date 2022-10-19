@@ -42,7 +42,7 @@ async function saveTxInputInfos(conn, params) {
 // 해당 트랜잭션의 input 정보 조회
 async function findTxInputByTxidId(conn, params) {
   const { txidId } = params;
-  const qry = "SELECT * FROM btc_wallet_dev.tx_input WHERE txid_id = ? ";
+  const qry = "SELECT * FROM tx_input WHERE txid_id = ? ";
   return new Promise(async (resolve, reject) => {
     try {
       const [rows] = await conn.execute(qry, [txidId]);

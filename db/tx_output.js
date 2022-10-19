@@ -42,7 +42,7 @@ async function saveTxOutputInfos(conn, params) {
 
 async function findTxOutputByTxidId(conn, params) {
   const { txidId } = params;
-  const qry = "SELECT * FROM btc_wallet_dev.tx_output WHERE txid_id = ? ";
+  const qry = "SELECT * FROM tx_output WHERE txid_id = ? ";
   return new Promise(async (resolve, reject) => {
     try {
       const [rows] = await conn.execute(qry, [txidId]);

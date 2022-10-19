@@ -69,7 +69,7 @@ async function saveTxidInfos(conn, params) {
 // input output 데이터 확인되지 않은 트랜잭션 row 조회
 async function getNotUpdatedTxid(conn, params) {
   const { lastIdx, limit } = params;
-  let qry = "SELECT * FROM btc_wallet_dev.block_tx";
+  let qry = "SELECT * FROM block_tx";
   qry += ` WHERE id > ? `;
   qry += ` AND updated_at IS NULL `;
   qry += ` ORDER BY id ASC LIMIT ? `;
@@ -88,7 +88,7 @@ async function getNotUpdatedTxid(conn, params) {
 // 트랜잭션 정보 조회 - txid 조건
 async function findTxidIdByTxid(conn, params) {
   const { txid } = params;
-  const qry = "SELECT * FROM btc_wallet_dev.block_tx WHERE txid = ? ";
+  const qry = "SELECT * FROM block_tx WHERE txid = ? ";
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, [txid]);
     resolve(rows);

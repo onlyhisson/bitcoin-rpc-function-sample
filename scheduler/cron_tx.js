@@ -124,11 +124,12 @@ async function txDetail() {
 
     // 업데이트된 마지막 txid 인덱스 번호저장, 조회 쿼리 빠르게 (A)
     updatedLastTxId = uTxids[uTxids.length - 1].id;
+
+    debugLog("TX END", `Input & Output`, 20);
   } catch (err) {
     debugLog("TX ERROR txDetail", err, 20);
     await conn.rollback(); // 트랜잭션 롤백
   } finally {
-    debugLog("TX END", `Input & Output`, 20);
     if (conn) {
       await conn.release();
     }
