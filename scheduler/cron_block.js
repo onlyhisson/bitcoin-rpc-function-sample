@@ -23,6 +23,7 @@ async function blockTxid() {
 
   try {
     conn = await getConnection();
+
     const rows = await getDbLastBlockInfo(conn);
     if (rows.length > 0) {
       const { block_no: dbLastBlockNum } = rows[0];
@@ -51,17 +52,9 @@ async function blockTxid() {
     // 블록 정보 저장
     await saveBlockInfo(conn, { blockNum, nTx, time, createdAt });
 
-    // 각 블록의 txid 저장
-    /*
-    const pSaveTx = tx.map((el) =>
-      saveTxidInfo(conn, { txid: el, blockNum, createdAt })
-    );
-
-    await Promise.all(pSaveTx);
-    */
-
     const txParams = tx.map((el) => ({ txid: el, blockNum, createdAt }));
 
+    // 각 블록의 txid 저장
     await saveTxidInfos(conn, txParams);
 
     await conn.commit(); // 트랜잭션 커밋
