@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Big = require("big.js");
 
-const { isNull } = require("../util");
+const { isNull, decodeBitcoinRawTx } = require("../util");
 const { block, transaction, wallet } = require("../util/rpc");
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
 
@@ -57,8 +57,6 @@ router.get("/inout/:txid", async function (req, res) {
     }
     const { id: txidId } = bts[0];
 
-    console.log("txidId : ", txidId);
-
     const txInputs = await findTxInputByTxidId(conn, { txidId });
     const txOutputs = await findTxOutputByTxidId(conn, { txidId });
 
@@ -67,13 +65,18 @@ router.get("/inout/:txid", async function (req, res) {
         txid: el.prev_txid,
         voutIdx: el.vout_no,
       }));
-      console.log("nInputs : ", nInputs);
+
       const inputAddrAmt = await findPrevTxOutputByTxInput(conn, nInputs);
-      console.log("inputAddrAmt : ", inputAddrAmt);
+
       nTxInputs = inputAddrAmt.map((el) => ({
+        no: el.vout_no,
         amount: el.amount,
         address: el.address,
       }));
+
+      nTxInputs = nTxInputs.sort(function (a, b) {
+        return a.no - b.no;
+      });
     }
 
     if (txOutputs.length > 0) {
@@ -137,11 +140,25 @@ async function findPrevTxOutputByTxInput(conn, inputs) {
 
     const pInputTxids = inputTxids.map(async (txid) => {
       const txidObjs = await findTxidIdByTxid(conn, { txid });
-      const iTxidId = txidObjs[0].id;
-      const outs = await findTxOutputByTxidId(conn, { txidId: iTxidId });
+      let outs = [];
+      // 과거 트랜잭션인 경우 DB에 정보 없음
+      if (txidObjs.length > 0) {
+        const iTxidId = txidObjs[0].id;
+        outs = await findTxOutputByTxidId(conn, { txidId: iTxidId });
+      } else {
+        const rawTxidData = await getRawTransaction(txid);
+        const decodeRawTxidData = decodeBitcoinRawTx(rawTxidData);
+        const { vout } = decodeRawTxidData;
+        outs = vout.map((out) => ({
+          amount: out.value,
+          address: out.scriptPubKey.address || null,
+          vout_no: out.n,
+        }));
+      }
       const outsFilter = outs.filter((out) =>
         inputObjs[txid].includes(out.vout_no)
       );
+
       newInputs = [...newInputs, ...outsFilter];
     });
 

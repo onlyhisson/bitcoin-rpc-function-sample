@@ -88,6 +88,7 @@ async function getNotUpdatedTxid(conn, params) {
 // 트랜잭션 정보 조회 - txid 조건
 async function findTxidIdByTxid(conn, params) {
   const { txid } = params;
+
   const qry = "SELECT * FROM block_tx WHERE txid = ? ";
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, [txid]);
