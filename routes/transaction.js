@@ -134,13 +134,13 @@ async function findPrevTxOutputByTxInput(conn, inputs) {
   let newInputs = [];
 
   try {
-    const inputTxids = inputs.map((el) => el.txid);
     const inputObjs = txidArrToObj(inputs);
-    console.log("inputObjs : ", inputObjs);
+    const inputTxids = Object.keys(inputObjs);
 
     const pInputTxids = inputTxids.map(async (txid) => {
       const txidObjs = await findTxidIdByTxid(conn, { txid });
       let outs = [];
+
       // 과거 트랜잭션인 경우 DB에 정보 없음
       if (txidObjs.length > 0) {
         const iTxidId = txidObjs[0].id;
