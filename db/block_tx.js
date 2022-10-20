@@ -32,7 +32,7 @@ async function completedTxDetailInfos(conn, params) {
 async function updatedOurTx(conn, params) {
   const { ids } = params;
   const idJoin = ids.join(",");
-  const qry = ` UPDATE block_tx SET is_bitstoa = 1 WHERE id IN(${idJoin})`;
+  const qry = ` UPDATE block_tx SET is_bitstoa = 0 WHERE id IN(${idJoin})`;
 
   return new Promise(async (resolve, reject) => {
     try {

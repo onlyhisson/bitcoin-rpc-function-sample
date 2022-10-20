@@ -88,6 +88,7 @@ async function txDetail() {
       // 관리하는 주소만 데이터 저장
       if (chk) {
         ourTxidId.push(id);
+        debugLog("TX 관리 대상 TXID", `[ ${txid} ]`, 20);
         // todo : 아래 내용 모두 포함해야함
       }
 
