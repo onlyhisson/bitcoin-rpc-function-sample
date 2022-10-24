@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { isNull } = require("../util");
-const { block, transaction, wallet } = require("../util/rpc");
+const rpc = require("../util/rpc");
 const {
   getListWallets,
   createWallet,
@@ -10,8 +10,11 @@ const {
   getWalletLabels,
   getAddressesByLabel,
   getAddressInfo,
-} = wallet;
+  getWalletBalances,
+} = rpc.wallet;
 const { BTC_ADDR_TYPE } = require("../static");
+const { getConnection } = require("../db");
+const { getWalletList } = require("../db/wallet");
 
 router.get("/", async function (req, res) {
   try {
@@ -148,6 +151,52 @@ router.get("/label", async function (req, res) {
       success: false,
       messgage: "error",
     });
+  }
+});
+
+router.get("/balances/:walletName", async function (req, res) {
+  let conn = null;
+
+  try {
+    const { walletName } = req.params;
+
+    if (isNull(walletName)) {
+      throw { message: `invalid parameter` };
+    }
+
+    conn = await getConnection();
+
+    const walletList = await getWalletList(conn);
+
+    const rows = await getWalletBalances(walletName);
+    const rowsEl = rows.map((el) => el[0]);
+    const balances = rowsEl.map((el) => {
+      const [address, amount, label] = el;
+      const walletInfos = walletList.filter((el) => el.address === address);
+      return {
+        label,
+        address,
+        amount,
+        desc: walletInfos.length > 0 ? walletInfos[0].desc : "",
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        balances,
+      },
+    });
+  } catch (err) {
+    console.error("[ERROR] : ", err);
+    res.json({
+      success: false,
+      messgage: "error",
+    });
+  } finally {
+    if (conn) {
+      conn.release();
+    }
   }
 });
 
