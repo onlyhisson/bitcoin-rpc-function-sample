@@ -184,6 +184,7 @@ router.get("/balances/:walletName", async function (req, res) {
     res.json({
       success: true,
       data: {
+        walletName,
         balances,
       },
     });
