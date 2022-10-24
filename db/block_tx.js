@@ -16,11 +16,15 @@ async function completedTxDetailInfo(conn, params) {
 async function completedTxDetailInfos(conn, params) {
   const { time, ids } = params;
   const idJoin = ids.join(",");
-  const qry = ` UPDATE block_tx SET updated_at = ? WHERE id IN(${idJoin})`;
+  const qry = ` UPDATE block_tx SET updated_at = ${time} WHERE id IN(${idJoin})`;
+
+  // Can't create more than max_prepared_stmt_count statements 에러 발생
+  //const qry = ` UPDATE block_tx SET updated_at = ? WHERE id IN(${idJoin})`;
 
   return new Promise(async (resolve, reject) => {
     try {
-      const [rows] = await conn.execute(qry, [time]);
+      //const [rows] = await conn.execute(qry, [time]);
+      const [rows] = await conn.execute(qry);
       resolve(rows);
     } catch (err) {
       reject(err);

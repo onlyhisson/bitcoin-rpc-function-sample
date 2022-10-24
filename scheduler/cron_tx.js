@@ -153,7 +153,7 @@ async function txDetail() {
     const time3 = `${(mill3 - mill2).toString().padStart(4, " ")} ms`;
     const time4 = `${(mill4 - mill3).toString().padStart(4, " ")} ms`;
     // 업데이트 안된 tx 조회 걸린 시간
-    debugLog("TX TXID updated_at NULL", time1, 30);
+    debugLog("TX query txid updated_at NULL", time1, 30);
     // bitcoin-cli 에 tx 정보 조회 요청 시간
     debugLog("TX bitcoin-cli raw tx", time2, 30);
     // 해당 트랜잭션 input output 데이터 저장 시간
