@@ -10,6 +10,7 @@ const { saveTxidInfos } = require("../db/block_tx");
 const { block } = require("../util/rpc");
 const { getBlockCount, getBlockHash, getBlock } = block;
 
+// 관리 지갑 목록 초기화
 const { cronCache } = require("./");
 
 // cron func

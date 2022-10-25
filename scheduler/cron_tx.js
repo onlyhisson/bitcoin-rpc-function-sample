@@ -16,12 +16,21 @@ const { saveTxOutputInfos } = require("../db/tx_output");
 const { transaction } = require("../util/rpc");
 const { getRawTransaction } = transaction;
 
+// 관리 지갑 목록 초기화
 const { cronCache } = require("./");
 
 const UPDATE_TX_ONCE = 55; // 한번 요청에 처리할 tx 개수
 let updatedLastTxId = 0;
 
-// cron func
+// 트랜잭션 정보 저장
+const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
+
+/**
+ * 각 블록의 모든 트랜잭션을 조회 후
+ * 해당 트랜잭션이 관리하는 지갑 주소와 관련이 있는지 확인
+ *
+ * todo : inputs 의 트랜잭션 정보 조회 후 spent 상태인지 처리 필요
+ */
 async function txDetail() {
   let conn = null;
   let ourTxidId = [];
@@ -29,6 +38,9 @@ async function txDetail() {
   let outAllParams = [];
 
   try {
+    // 일단 스톱, 이후 실행 코드에서 크론 주기 이상의 딜레이가 발생할 수 있음
+    txJob.stop();
+
     // 관리하는 지갑 목록 조회
     const walletList = cronCache.get("walletList");
     if (walletList === undefined || walletList.length < 1) {
@@ -89,29 +101,26 @@ async function txDetail() {
       if (chk) {
         ourTxidId.push(id);
         debugLog("TX 관리 대상 TXID", `[ ${txid} ]`, 20);
-        // todo : 아래 내용 모두 포함해야함
+
+        const inParams = vins.map((el) => {
+          return {
+            txId: id,
+            prevTxid: el.txid,
+            voutNo: el.vout,
+          };
+        });
+        const outParams = vouts.map((el) => {
+          return {
+            txId: id,
+            amount: el.amount,
+            address: el.address || null,
+            voutNo: el.no,
+          };
+        });
+
+        inAllParams = [...inAllParams, ...inParams];
+        outAllParams = [...outAllParams, ...outParams];
       }
-
-      // 여기부터
-      const inParams = vins.map((el) => {
-        return {
-          txId: id,
-          prevTxid: el.txid,
-          voutNo: el.vout,
-        };
-      });
-      const outParams = vouts.map((el) => {
-        return {
-          txId: id,
-          amount: el.amount,
-          address: el.address || null,
-          voutNo: el.no,
-        };
-      });
-
-      inAllParams = [...inAllParams, ...inParams];
-      outAllParams = [...outAllParams, ...outParams];
-      // 여기까지
     });
 
     if (inAllParams.length > 0) {
@@ -136,22 +145,19 @@ async function txDetail() {
 
     const mill4 = new Date().getTime();
 
-    debugLog(
-      "TX Update List",
-      `${uTxids[0].id} ~ ${uTxids[uTxids.length - 1].id}`,
-      20
-    );
+    const txidRange = `${uTxids[0].id} ~ ${uTxids[uTxids.length - 1].id}`;
+    debugLog("TX Update List", txidRange, 20);
+    debugLog("TX END", `Input & Output`, 20);
 
     // 업데이트된 마지막 txid 인덱스 번호저장, 조회 쿼리 빠르게 (A)
     updatedLastTxId = uTxids[uTxids.length - 1].id;
-
-    debugLog("TX END", `Input & Output`, 20);
 
     console.log();
     const time1 = `${(mill1 - startMil).toString().padStart(4, " ")} ms`;
     const time2 = `${(mill2 - mill1).toString().padStart(4, " ")} ms`;
     const time3 = `${(mill3 - mill2).toString().padStart(4, " ")} ms`;
     const time4 = `${(mill4 - mill3).toString().padStart(4, " ")} ms`;
+
     // 업데이트 안된 tx 조회 걸린 시간
     debugLog("TX query txid updated_at NULL", time1, 30);
     // bitcoin-cli 에 tx 정보 조회 요청 시간
@@ -168,6 +174,7 @@ async function txDetail() {
     if (conn) {
       await conn.release();
     }
+    txJob.start();
   }
 }
 
@@ -224,11 +231,4 @@ function checkCoinbase(vin) {
   return vin[0].coinbase ? true : false;
 }
 
-// 트랜잭션 정보 저장
-//const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
-
-//txJob.start();
-
-setInterval(() => {
-  txDetail();
-}, 1000);
+txJob.start();

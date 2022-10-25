@@ -27,7 +27,29 @@ async function getDecodeRawTransaction(rawData) {
   }
 }
 
+async function createRawTransaction(sendInfo) {
+  try {
+    const { txids, to, amount } = sendInfo;
+    let txidData = "";
+    txids.forEach((el, idx) => {
+      if (idx === 0) {
+        txidData += `{\"txid\": \"${el.txid}\",\"vout\": ${el.vout},\"sequence\":1 }`;
+      } else {
+        txidData += `,{\"txid\": \"${el.txid}\",\"vout\": ${el.vout},\"sequence\":1 }`;
+      }
+    });
+    const fData = `"[${txidData}]" `;
+    const tData = `"[{\"${to}\":${amount}}]"`;
+    const params = [...RPC_OPTION, `createrawtransaction`, fData, tData];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return cmdResult;
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
   getRawTransaction,
   getDecodeRawTransaction,
+  createRawTransaction,
 };
