@@ -24,7 +24,7 @@ const spentJob = new CronJob(
 );
 
 const updateUtxoJob = new CronJob(
-  " * * * * * *",
+  " */10 * * * * *",
   updateUnspentOutputs,
   null,
   true,

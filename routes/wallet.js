@@ -14,12 +14,22 @@ const {
 } = rpc.wallet;
 const { BTC_ADDR_TYPE } = require("../static");
 const { getConnection } = require("../db");
-const { getWalletList } = require("../db/wallet");
+const {
+  getWalletInfos,
+  getWalletList,
+  saveWallet,
+  saveWalletAddress,
+} = require("../db/wallet");
 
+// 지갑 정보 조회
 router.get("/", async function (req, res) {
+  let conn = null;
+
   try {
-    // 지갑 정보 조회
-    const wallets = await getListWallets();
+    conn = await getConnection();
+    //const wallets = await getListWallets();
+    const wallets = await getWalletInfos(conn);
+
     res.json({
       success: true,
       data: {
@@ -32,19 +42,24 @@ router.get("/", async function (req, res) {
       success: false,
       messgage: "error",
     });
+  } finally {
+    if (conn) {
+      conn.release();
+    }
   }
 });
 
 // 지갑 추가
 router.post("/", async function (req, res) {
+  let conn = null;
   try {
-    const { name, pass_phase: passPhase } = req.body;
+    const { name, desc, pass_phase: passPhase } = req.body;
 
-    if (isNull(name) || isNull(passPhase)) {
+    if (isNull(name) || isNull(passPhase) || isNull(desc)) {
       throw { message: `invalid parameter` };
     }
 
-    // 현재 지갑 목록 조회
+    // 현재 지갑 목록 조회, rpc 서버 기준
     const wallets = await getListWallets();
     console.log("wallets : ", wallets);
 
@@ -61,11 +76,16 @@ router.post("/", async function (req, res) {
     const encrypted = await encryptWallet(name, passPhase);
     console.log("encrypted : ", encrypted);
 
+    conn = await getConnection();
+    const { insertId } = await saveWallet(conn, { name, desc });
+
     res.json({
       success: true,
       data: {
         wallet: {
+          id: insertId,
           name,
+          desc,
           passPhase,
         },
       },
@@ -76,42 +96,63 @@ router.post("/", async function (req, res) {
       success: false,
       message: err.message ? err.message : "error",
     });
+  } finally {
+    if (conn) {
+      conn.release();
+    }
   }
 });
 
 // 지갑 주소 추가
 router.post("/address", async function (req, res) {
-  try {
-    const { wallet, label, type } = req.body;
+  let conn = null;
 
-    if (isNull(wallet) || isNull(label) || isNull(type)) {
+  try {
+    const { walletId, label, type } = req.body;
+
+    if (isNull(walletId) || isNull(label) || isNull(type)) {
       throw { message: `invalid parameter` };
     }
 
+    // 지갑 생성 타입 체크
     const types = Object.values(BTC_ADDR_TYPE);
     if (!types.includes(type)) {
       throw { message: `invalid parameter(address type)` };
     }
 
+    conn = await getConnection();
+
     // 현재 지갑 목록 조회
-    const wallets = await getListWallets();
+    const wallets = await getWalletInfos(conn);
+    const walletInfo = wallets.filter((el) => el.id === Number(walletId));
 
     // 지갑 없으면 error
-    if (!wallets.includes(wallet)) {
+    if (walletInfo.length < 1) {
       throw { message: "the wallet is not exist" };
+    }
+    const { name: walletName } = walletInfo[0];
+    const addresses = await getWalletList(conn, { walletId });
+    const labels = addresses.map((el) => el.label);
+    if (labels.includes(label)) {
+      throw { message: `label name(${label}) is already exist` };
     }
 
     // 지갑 생성
-    const address = await getNewAddress(wallet, label, type);
-    console.log("address : ", address);
+    const address = await getNewAddress(walletName, label, type);
 
-    // 해당 지갑 라벨 리스트
-    const labels = await getWalletLabels(wallet);
-    console.log("labels : ", labels);
+    // 해당 지갑 라벨 리스트 - rpc
+    //const labels = await getWalletLabels(walletName);
+    //console.log("labels : ", labels);
+
+    const { insertId } = await saveWalletAddress(conn, {
+      walletId,
+      label,
+      address,
+    });
 
     res.json({
       success: true,
-      data: { label, address, type },
+      data: { id: insertId, label, address, type },
     });
   } catch (err) {
     console.error("[ERROR] : ", err);
@@ -119,6 +160,10 @@ router.post("/address", async function (req, res) {
       success: false,
       message: err.message ? err.message : "error",
     });
+  } finally {
+    if (conn) {
+      conn.release();
+    }
   }
 });
 
