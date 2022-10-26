@@ -27,6 +27,9 @@ async function getDecodeRawTransaction(rawData) {
   }
 }
 
+/**
+ * 완료 X
+ */
 async function createRawTransaction(sendInfo) {
   try {
     const { txids, to, amount } = sendInfo;
@@ -48,8 +51,23 @@ async function createRawTransaction(sendInfo) {
   }
 }
 
+/**
+ * 트랜잭션 output spent 확인
+ */
+async function getUnspentTxOutput(outputInfo) {
+  try {
+    const { txid, voutNo } = outputInfo;
+    const params = [...RPC_OPTION, `gettxout`, txid, voutNo];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return cmdResult.length > 0 ? JSON.parse(cmdResult) : null;
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
   getRawTransaction,
   getDecodeRawTransaction,
   createRawTransaction,
+  getUnspentTxOutput,
 };

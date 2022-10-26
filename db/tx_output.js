@@ -53,4 +53,48 @@ async function findTxOutputByTxidId(conn, params) {
   });
 }
 
-module.exports = { saveTxOutputInfo, saveTxOutputInfos, findTxOutputByTxidId };
+// unspent output 조회 - 잔액 개념
+async function findUnspentTxOutputs(conn, params) {
+  let qry = " SELECT ";
+  qry += "  tout.id, ";
+  qry += "  bt.txid, ";
+  qry += "  tout.vout_no, ";
+  qry += "  tout.address, ";
+  qry += "  tout.amount ";
+  qry += " FROM btc_wallet_dev.tx_output tout ";
+  qry += "  INNER JOIN btc_wallet_dev.block_tx bt ";
+  qry += "  ON bt.id = tout.txid_id ";
+  qry += " WHERE is_spent = 0 ";
+  qry += " ORDER BY tout.id";
+  return new Promise(async (resolve, reject) => {
+    try {
+      const [rows] = await conn.execute(qry, []);
+      resolve(rows);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+async function updateUnspentTxOutputs(conn, params) {
+  const { isSpent, outputs } = params;
+  const ids = outputs.join(",");
+  let qry = `UPDATE btc_wallet_dev.tx_output `;
+  qry += ` SET is_spent = ? WHERE id IN(${ids}) `;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const [rows] = await conn.execute(qry, [isSpent]);
+      resolve(rows);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+module.exports = {
+  saveTxOutputInfo,
+  saveTxOutputInfos,
+  findTxOutputByTxidId,
+  findUnspentTxOutputs,
+  updateUnspentTxOutputs,
+};

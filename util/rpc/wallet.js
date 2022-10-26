@@ -98,12 +98,26 @@ async function getAddressInfo(wallet, address) {
 }
 
 /**
- * 지갑 잔액 정보 조회
+ * 지갑 주소별 잔액 정보 조회
  */
 async function getWalletBalances(wallet) {
   try {
     const newRpcOption = [...RPC_OPTION, `-rpcwallet=${wallet}`];
     const params = [...newRpcOption, `listaddressgroupings`];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return JSON.parse(cmdResult);
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
+ * 지갑 전체 잔액
+ */
+async function getWalletBalance(wallet) {
+  try {
+    const newRpcOption = [...RPC_OPTION, `-rpcwallet=${wallet}`];
+    const params = [...newRpcOption, `getbalances`];
     const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
     return JSON.parse(cmdResult);
   } catch (err) {
@@ -120,4 +134,5 @@ module.exports = {
   getAddressesByLabel,
   getAddressInfo,
   getWalletBalances,
+  getWalletBalance,
 };
