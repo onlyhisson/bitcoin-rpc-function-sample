@@ -17,6 +17,13 @@ app.use("/wallet", wallet);
 app.use("/tx", transaction);
 app.use("/assets", assets);
 
+app.use((req, res, next) => {
+  res.json({
+    success: false,
+    message: "Page not found",
+  });
+});
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
