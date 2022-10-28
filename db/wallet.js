@@ -1,9 +1,14 @@
 // 지갑 정보 조회
 async function getWalletInfos(conn, params) {
-  let qry = "SELECT * FROM btc_wallet_dev.wallet_info";
+  let conditions = [];
+  let qry = "SELECT * FROM btc_wallet_dev.wallet_info WHERE type = 0";
+  if (params.walletId) {
+    qry += " AND id = ?";
+    conditions.push(params.walletId);
+  }
 
   return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry);
+    const [rows] = await conn.execute(qry, conditions);
     resolve(rows);
   });
 }
@@ -48,7 +53,10 @@ async function findWalletAddress(conn, params) {
 async function getWalletAddressList(conn, params) {
   let conditions = [];
   let qry = "SELECT ";
-  qry += "   wa.address ";
+  qry += "   wi.name AS wallet_name";
+  qry += "   ,wi.id AS wallet_id";
+  qry += "   ,wa.id AS address_id";
+  qry += "   ,wa.address ";
   qry += "   ,wa.label ";
   qry += "   ,wi.name ";
   qry += "   ,wi.desc ";

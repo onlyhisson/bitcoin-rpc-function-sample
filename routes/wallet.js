@@ -223,7 +223,10 @@ router.get("/balances/:walletId", async function (req, res) {
     const balances = rowsEl.map((el) => {
       const [address, amount, label] = el;
       const walletInfos = walletList.filter((el) => el.address === address);
+
       return {
+        walletId: walletInfos[0].wallet_id,
+        addressId: walletInfos[0].address_id,
         label,
         address,
         amount,
