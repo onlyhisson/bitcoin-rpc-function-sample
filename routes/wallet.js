@@ -16,7 +16,7 @@ const { BTC_ADDR_TYPE } = require("../static");
 const { getConnection } = require("../db");
 const {
   getWalletInfos,
-  getWalletList,
+  getWalletAddressList,
   saveWallet,
   saveWalletAddress,
 } = require("../db/wallet");
@@ -131,7 +131,7 @@ router.post("/address", async function (req, res) {
       throw { message: "the wallet is not exist" };
     }
     const { name: walletName } = walletInfo[0];
-    const addresses = await getWalletList(conn, { walletId });
+    const addresses = await getWalletAddressList(conn, { walletId });
     const labels = addresses.map((el) => el.label);
     if (labels.includes(label)) {
       throw { message: `label name(${label}) is already exist` };
@@ -199,20 +199,25 @@ router.get("/label", async function (req, res) {
   }
 });
 
-router.get("/balances/:walletName", async function (req, res) {
+router.get("/balances/:walletId", async function (req, res) {
   let conn = null;
 
   try {
-    const { walletName } = req.params;
+    const { walletId } = req.params;
 
-    if (isNull(walletName)) {
+    if (isNull(walletId)) {
       throw { message: `invalid parameter` };
     }
 
     conn = await getConnection();
 
-    const walletList = await getWalletList(conn);
+    const walletList = await getWalletAddressList(conn, { walletId });
+    if (walletList.length < 1) {
+      throw { message: "해당 지갑에 등록된 주소가 없습니다." };
+    }
+    const { name: walletName } = walletList[0];
 
+    // 잔액 조회시 RPC 서버에서 생성한 지갑이 아니면 RPC 잔액조회 에러발생
     const rows = await getWalletBalances(walletName);
     const rowsEl = rows.map((el) => el[0]);
     const balances = rowsEl.map((el) => {
@@ -237,7 +242,7 @@ router.get("/balances/:walletName", async function (req, res) {
     console.error("[ERROR] : ", err);
     res.json({
       success: false,
-      messgage: "error",
+      message: err.message ? err.message : "error",
     });
   } finally {
     if (conn) {

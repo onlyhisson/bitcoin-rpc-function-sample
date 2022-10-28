@@ -17,7 +17,7 @@ const { transaction } = require("../util/rpc");
 const { getRawTransaction } = transaction;
 
 // 관리 지갑 목록 초기화
-const { cronCache } = require("./");
+const { cronCache, WALLET_LIST } = require("./");
 
 const UPDATE_TX_ONCE = 55; // 한번 요청에 처리할 tx 개수
 let updatedLastTxId = 0;
@@ -42,7 +42,7 @@ async function txDetail() {
     txJob.stop();
 
     // 관리하는 지갑 목록 조회
-    const walletList = cronCache.get("walletList");
+    const walletList = cronCache.get(WALLET_LIST);
     if (walletList === undefined || walletList.length < 1) {
       debugLog("TX ERROR", "Please update Wallet List", 20);
       return;

@@ -33,10 +33,20 @@ async function saveWalletAddress(conn, params) {
   });
 }
 
+// 지갑 주소 조회
+async function findWalletAddress(conn, params) {
+  const { addressId: id } = params;
+  const qry = "SELECT * FROM btc_wallet_dev.wallet_address WHERE id = ?";
+
+  return new Promise(async (resolve, reject) => {
+    const [rows] = await conn.execute(qry, [id]);
+    resolve(rows);
+  });
+}
+
 // 지갑 주소 목록 조회
-async function getWalletList(conn, params) {
+async function getWalletAddressList(conn, params) {
   let conditions = [];
-  const { walletId } = params;
   let qry = "SELECT ";
   qry += "   wa.address ";
   qry += "   ,wa.label ";
@@ -45,9 +55,10 @@ async function getWalletList(conn, params) {
   qry += " FROM btc_wallet_dev.wallet_address wa ";
   qry += " INNER JOIN btc_wallet_dev.wallet_info wi ";
   qry += " ON wa.wallet_id = wi.id ";
-  if (walletId) {
-    qry += " WHERE wi.id = ?";
-    conditions.push(walletId);
+  qry += " WHERE wi.type = 0 ";
+  if (params.walletId) {
+    qry += " AND wi.id = ?";
+    conditions.push(params.walletId);
   }
 
   return new Promise(async (resolve, reject) => {
@@ -57,9 +68,21 @@ async function getWalletList(conn, params) {
   });
 }
 
+// 전체 주소 목록 조회
+async function getAddressList(conn) {
+  const qry = "SELECT address FROM btc_wallet_dev.wallet_address";
+
+  return new Promise(async (resolve, reject) => {
+    const [rows] = await conn.execute(qry, []);
+    resolve(rows);
+  });
+}
+
 module.exports = {
   getWalletInfos,
-  getWalletList,
+  getWalletAddressList,
+  getAddressList,
   saveWallet,
   saveWalletAddress,
+  findWalletAddress,
 };

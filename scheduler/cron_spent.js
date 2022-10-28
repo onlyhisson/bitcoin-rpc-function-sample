@@ -36,7 +36,10 @@ updateUtxoJob.start();
 
 // uxto 업데이트
 async function updateUnspentOutputs() {
-  if (utxoQueue.length < 1) {
+  try {
+    if (utxoQueue.length > 0) {
+      return;
+    }
     await resetUnspentOutputs();
     utxoQueue = cronCache.get(UNSPENT_OUTPUTS);
     const balance = utxoQueue.reduce(reduceSumBigAmount, 0);
@@ -54,6 +57,8 @@ async function updateUnspentOutputs() {
       `${trusted} BTC [ ${WALLET_NAME} ] `,
       30
     );
+  } catch (err) {
+    console.log("updateUnspentOutputs ERROR : ", err);
   }
 }
 

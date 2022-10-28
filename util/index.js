@@ -1,3 +1,4 @@
+const Big = require("big.js");
 const { spawn } = require("node:child_process");
 const { decodeRawTx } = require("./bitcoin");
 
@@ -65,6 +66,17 @@ function debugLog(label, content, pad = 20) {
   console.log(`[ ${fTime} ] - ${newLabel}${newContent}`);
 }
 
+function validateCoinAmount(value, decimalCnt = 8) {
+  try {
+    const amount = new Big(value).toFixed(decimalCnt);
+    const diff = new Big(value).minus(amount).toString();
+    return diff === "0" ? amount : null;
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+}
+
 module.exports = {
   executeCommand,
   wait,
@@ -72,4 +84,5 @@ module.exports = {
   getFormatDate,
   decodeBitcoinRawTx: decodeRawTx,
   debugLog,
+  validateCoinAmount,
 };

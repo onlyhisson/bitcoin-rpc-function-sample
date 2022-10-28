@@ -4,7 +4,7 @@ const NodeCache = require("node-cache");
 const cronCache = new NodeCache();
 
 const { getConnection } = require("../db");
-const { getWalletList } = require("../db/wallet");
+const { getAddressList } = require("../db/wallet");
 const { findUnspentTxOutputs } = require("../db/tx_output");
 const { debugLog } = require("../util");
 
@@ -16,9 +16,9 @@ async function setWalletList() {
   let conn = null;
   try {
     conn = await getConnection();
-    const walletObjs = await getWalletList(conn, {});
+    const walletObjs = await getAddressList(conn, {});
     const wallets = walletObjs.map((el) => el.address);
-    //debugLog("Set Wallet", wallets, 20);
+    debugLog("Set Wallet", wallets, 20);
     cronCache.set(WALLET_LIST, wallets, 0);
   } catch (err) {
   } finally {
@@ -93,5 +93,6 @@ module.exports = {
   initCron,
   resetWalletList,
   resetUnspentOutputs,
+  WALLET_LIST,
   UNSPENT_OUTPUTS,
 };
