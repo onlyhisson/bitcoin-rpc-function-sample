@@ -24,6 +24,7 @@ const {
 } = require("../util/rpc/transaction");
 
 const FEE = "0.00001551"; // 임시, 출금시 tx의 output 개수에 따라?
+const MIN_AMOUNT = "0.00000500"; // 출금 가능 최소 개수
 
 // 출금 요청 - 사용자
 router.post("/withdraw/coin", async function (req, res) {
@@ -32,7 +33,11 @@ router.post("/withdraw/coin", async function (req, res) {
   try {
     const { addressId, toAddress, amount } = req.body;
 
-    const newAmt = validateCoinAmount(amount); // 출금 숫자 유효성 확인
+    // 출금 숫자 유효성 확인
+    const newAmt = validateCoinAmount(amount, {
+      decimalCnt: 8,
+      minAmt: MIN_AMOUNT,
+    });
 
     const { isvalid: isBtcAddr } = await validateAddress(toAddress);
     if (!isBtcAddr) {
@@ -94,7 +99,7 @@ router.post("/withdraw/coin", async function (req, res) {
     const newBalanceFixed = newBalance.toFixed(8);
 
     debugLog("실제 네트워크 잔액", balance, 19);
-    debugLog("출금요청중 잔액", freezeAmt, 20);
+    debugLog("해당주소 요청 잔액", freezeAmt, 19);
     debugLog("출금요청한 금액", newAmt, 20);
 
     const chkMinus = newBalance.gte(0); // 오른쪽보다 크거나 같은가

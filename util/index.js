@@ -66,14 +66,30 @@ function debugLog(label, content, pad = 20) {
   console.log(`[ ${fTime} ] - ${newLabel}${newContent}`);
 }
 
-function validateCoinAmount(value, decimalCnt = 8) {
+function validateCoinAmount(value, option) {
+  const expandOption = {
+    decimalCnt: 8,
+    minAmt: "0.00000500",
+    ...option,
+  };
+
+  const { decimalCnt, minAmt } = expandOption;
   try {
+    // 자리수 맞춤, 잘못된 형식의 amount 입력 방지
     const amount = new Big(value).toFixed(decimalCnt);
     const diff = new Big(value).minus(amount).toString();
-    return diff === "0" ? amount : null;
+    if (diff !== "0") {
+      throw { message: "잘못된 형식의 출금액" };
+    }
+
+    const minChk = new Big(value).gte(minAmt);
+    if (!minChk) {
+      throw { message: `최소 출금액은 ${minAmt} BTC 입니다.` };
+    }
+
+    return amount;
   } catch (err) {
-    console.log(err);
-    return null;
+    throw err;
   }
 }
 
