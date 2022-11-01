@@ -1,6 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+//swagger
+const swaggerUi = require("swagger-ui-express");
+const { origin, jsDoc } = require("./swagger");
+const swaggerJsdoc = require("swagger-jsdoc");
 // routes
 const block = require("./routes/block");
 const wallet = require("./routes/wallet");
@@ -12,6 +16,14 @@ const port = process.env.PORT;
 
 require("./middlewares")(app);
 
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerJsdoc(jsDoc), origin)
+);
+app.use("/swagger", express.static(__dirname + "/swagger", {}));
+
+// routes
 app.use("/block", block);
 app.use("/wallet", wallet);
 app.use("/tx", transaction);
