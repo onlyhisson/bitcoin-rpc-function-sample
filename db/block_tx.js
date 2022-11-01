@@ -87,7 +87,7 @@ async function saveTxidInfos(conn, params) {
 }
 
 // input output 데이터 확인되지 않은 트랜잭션 row 조회
-async function getNotUpdatedTxid(conn, params) {
+async function findNotUpdatedTxid(conn, params) {
   const { lastIdx, limit } = params;
   let qry = "SELECT * FROM block_tx";
   qry += ` WHERE id > ? `;
@@ -116,12 +116,34 @@ async function findTxidIdByTxid(conn, params) {
   });
 }
 
+// txid 및 block no 로 출금 요청 정보 조회
+async function findByTxid(conn, params) {
+  let condition = [];
+
+  let qry = " SELECT * ";
+  qry += " FROM btc_wallet_dev.block_tx";
+  qry += " WHERE is_bitstoa = 0 ";
+  if (params.txid) {
+    qry += " AND txid = ? ";
+    condition.push(params.txid);
+  }
+  if (params.blockNum) {
+    qry += " AND block_no > ? ";
+    condition.push(params.blockNum);
+  }
+  return new Promise(async (resolve, reject) => {
+    const [rows] = await conn.execute(qry, condition);
+    resolve(rows);
+  });
+}
+
 module.exports = {
   completedTxDetailInfo,
   completedTxDetailInfos,
   saveTxidInfo,
   saveTxidInfos,
-  getNotUpdatedTxid,
+  findNotUpdatedTxid,
   findTxidIdByTxid,
+  findByTxid,
   updatedOurTx,
 };

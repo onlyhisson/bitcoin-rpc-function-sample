@@ -44,16 +44,35 @@ async function findWithdrawalCoinReq(conn, params) {
 // 출금 tx 가 confirmed 됨, 블록체인에 기록됨
 // status=3, updated_at
 async function updateWithdrawalCoinReqById(conn, params) {
-  const { reqId, status, txid, lastBlockNum } = params;
+  let condition = [];
   let qry = " UPDATE btc_wallet_dev.coin_withdrawal_req ";
   qry += " SET updated_at = UNIX_TIMESTAMP() ";
-  qry += "  , status = ? ";
-  qry += "  , txid = ? ";
-  qry += "  , start_block_no = ? ";
-  qry += " WHERE id = ? ";
+  if (params.status) {
+    qry += "  , status = ? ";
+    condition.push(params.status);
+  }
+  if (params.txid) {
+    qry += "  , txid = ? ";
+    condition.push(params.txid);
+  }
+  // 출금 처리 승인 시의 마지막 블록넘버
+  if (params.lastBlockNum) {
+    qry += "  , start_block_no = ? ";
+    condition.push(params.lastBlockNum);
+  }
+  // 해당 트랜잭션이 포함된 블록 넘버
+  if (params.txBlockNum) {
+    qry += "  , end_block_no = ? ";
+    condition.push(params.txBlockNum);
+  }
+
+  if (params.reqId) {
+    qry += " WHERE id = ? ";
+    condition.push(params.reqId);
+  }
 
   return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry, [status, txid, lastBlockNum, reqId]);
+    const [rows] = await conn.execute(qry, condition);
     resolve(rows);
   });
 }

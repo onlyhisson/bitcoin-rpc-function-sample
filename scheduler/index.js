@@ -18,7 +18,7 @@ async function setWalletList() {
     conn = await getConnection();
     const walletObjs = await getAddressList(conn, {});
     const wallets = walletObjs.map((el) => el.address);
-    debugLog("Set Wallet", wallets, 20);
+    debugLog("Set Wallet", `[ ${wallets.length} ]`, 20);
     cronCache.set(WALLET_LIST, wallets, 0);
   } catch (err) {
   } finally {

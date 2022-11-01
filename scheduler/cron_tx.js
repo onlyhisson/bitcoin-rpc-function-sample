@@ -7,7 +7,7 @@ const { getConnection } = require("../db");
 const {
   completedTxDetailInfo,
   completedTxDetailInfos,
-  getNotUpdatedTxid,
+  findNotUpdatedTxid,
   updatedOurTx,
 } = require("../db/block_tx");
 const { saveTxInputInfos } = require("../db/tx_input");
@@ -54,7 +54,7 @@ async function txDetail() {
     const startMil = new Date().getTime();
 
     // 처리하지 않은 txid(업데이트 컬럼 === NULL) 중에서 첫번째
-    const uTxids = await getNotUpdatedTxid(conn, {
+    const uTxids = await findNotUpdatedTxid(conn, {
       lastIdx: updatedLastTxId,
       limit: UPDATE_TX_ONCE,
     }); // (A)

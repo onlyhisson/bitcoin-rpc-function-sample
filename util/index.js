@@ -67,14 +67,15 @@ function debugLog(label, content, pad = 20) {
 }
 
 function validateCoinAmount(value, option) {
-  const expandOption = {
-    decimalCnt: 8,
-    minAmt: "0.00000500",
-    ...option,
-  };
-
-  const { decimalCnt, minAmt } = expandOption;
   try {
+    const expandOption = {
+      decimalCnt: 8,
+      minAmt: "0.00000500",
+      ...option,
+    };
+
+    const { decimalCnt, minAmt } = expandOption;
+
     // 자리수 맞춤, 잘못된 형식의 amount 입력 방지
     const amount = new Big(value).toFixed(decimalCnt);
     const diff = new Big(value).minus(amount).toString();
