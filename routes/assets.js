@@ -4,15 +4,28 @@ const Big = require("big.js");
 const { validateCoinAmount, isNull, debugLog } = require("../util");
 const { getConnection } = require("../db");
 const { getWalletInfos, findWalletAddress } = require("../db/wallet");
+const { findUnspentTxOutputs } = require("../db/tx_output");
 const {
   findWithdrawalCoinReq,
   saveWithdrawalCoinReq,
+  updateWithdrawalCoinReqById,
 } = require("../db/assets");
 const { validateAddress } = require("../util/rpc/util");
-const { getWalletBalances } = require("../util/rpc/wallet");
+const { getBlockCount } = require("../util/rpc/block");
+const {
+  authWalletPassPhrase,
+  getWalletBalances,
+  signRawTxWithWallet,
+} = require("../util/rpc/wallet");
+const {
+  createRawTransaction,
+  testMemPoolAccept,
+  sendRawTransaction,
+} = require("../util/rpc/transaction");
 
-const FEE = "0.00001551"; // 임시
+const FEE = "0.00001551"; // 임시, 출금시 tx의 output 개수에 따라?
 
+// 출금 요청 - 사용자
 router.post("/withdraw/coin", async function (req, res) {
   let conn = null;
 
@@ -123,6 +136,137 @@ router.post("/withdraw/coin", async function (req, res) {
     }
   }
 });
+
+// 출금 승인 - 관리자
+router.patch("/withdraw/coin/:id", async function (req, res) {
+  let conn = null;
+
+  try {
+    const { id } = req.params;
+    const passPhase = process.env.PW_PHASE;
+
+    if (isNull(id) || isNull(passPhase)) {
+      throw { message: `invalid parameter` };
+    }
+
+    conn = await getConnection();
+
+    const reqs = await findWithdrawalCoinReq(conn, {
+      id,
+      status: 1 /* 요청중 */,
+    });
+    if (reqs.length < 1) {
+      throw { message: "요청 중인 출금 건 없음" };
+    }
+
+    const lastBlockNum = await getBlockCount();
+
+    const txid = await sendCoin({
+      walletId: reqs[0].wallet_id,
+      fromAddr: reqs[0].address,
+      toAddr: reqs[0].to_addr,
+      amount: reqs[0].amount,
+      fee: reqs[0].fee,
+    });
+
+    const params = {
+      reqId: id,
+      status: 2,
+      txid,
+      lastBlockNum,
+    };
+    await updateWithdrawalCoinReqById(conn, params);
+
+    res.json({
+      success: true,
+      data: { txid },
+    });
+  } catch (err) {
+    console.error("[ERROR] : ", err);
+    res.json({
+      success: false,
+      message: err.message ? err.message : "error",
+    });
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+});
+
+async function sendCoin(sendInfo) {
+  let conn = null;
+
+  try {
+    conn = await getConnection();
+    console.log("sendInfo : ", sendInfo);
+
+    const { walletId, fromAddr, toAddr, amount, fee } = sendInfo;
+    const walletInfos = await getWalletInfos(conn, { walletId });
+    if (walletInfos.length < 1) {
+      throw { message: "지갑 정보가 없습니다." };
+    }
+    const { name: wallletName } = walletInfos[0];
+
+    const outputs = await findUnspentTxOutputs(conn, { address: fromAddr });
+    if (outputs.length < 1) {
+      throw { message: "이전 전송이 아직 완료되지 않았습니다." };
+    }
+    const outputObjs = outputs.map(
+      (el) => `{\"txid\": \"${el.txid}\",\"vout\":${el.vout_no}}`
+    );
+    const opsTotalAmt = outputs.reduce(reduceSumBigAmount, 0);
+    const balance = new Big(opsTotalAmt).minus(fee).minus(amount).toFixed(8);
+    console.log("walletInfos : ", walletInfos);
+    console.log("outputs : ", outputs);
+    console.log("opsTotalAmt : ", opsTotalAmt);
+    console.log("balance : ", balance);
+
+    // 여러 tx -> 하나의 tx
+    const from = `[${outputObjs.join(",")}]`;
+    // 이체 후 잔액은 자신의 주소로
+    const to = `[{\"${toAddr}\":${amount}},{\"${fromAddr}\":${balance}}]`;
+    // raw taransaction 정보 생성
+    const rawTx = await createRawTransaction({ from, to });
+    // 지갑 인증
+    await authWalletPassPhrase(wallletName, process.env.PW_PHASE);
+    // 지갑 정보로 서명
+    const { hex, complete } = await signRawTxWithWallet(wallletName, rawTx);
+    if (!complete) {
+      throw { message: "sign raw transaction with wallet failed" };
+    }
+
+    console.log("hex : ", hex);
+
+    // mempool acceptance tests
+    // 이전에 잔액 확인을 하지만 여기서 최종적으로 잔액이 맞지 않는 경우 에러
+    const memPoolTest = await testMemPoolAccept(`[\"${hex}\"]`);
+    console.log("memPoolTest : ", memPoolTest);
+
+    const { txid, wtxid, allowed, vsize, fees } = memPoolTest;
+    if (!allowed) {
+      throw { message: "mempool accept test failed" };
+    }
+
+    const sendTx = await sendRawTransaction(hex);
+
+    console.log("txid : ", txid);
+    console.log("sendTx : ", sendTx);
+
+    return txid;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  } finally {
+    if (conn) conn.release();
+  }
+}
+
+function reduceSumBigAmount(prev, cur) {
+  const { amount } = cur;
+  const x = new Big(amount).toFixed(8);
+  return new Big(x).plus(prev).toFixed(8);
+}
 
 function reduceSumBigAmountAndFee(prev, cur) {
   const { amount, fee } = cur;

@@ -2,6 +2,21 @@ const { executeCommand } = require("..");
 const { BITCOIN_CMD, RPC_OPTION } = require("../../static");
 
 /**
+ * 지갑 인증
+ */
+async function authWalletPassPhrase(name, pwPhase) {
+  try {
+    const newRpcOption = [...RPC_OPTION, `-rpcwallet=${name}`];
+    const expired = 3; // 지갑 인증 유효 시간 sec
+    const params = [...newRpcOption, `walletpassphrase`, pwPhase, expired];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return cmdResult;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
  * 지갑 목록 조회
  */
 async function getListWallets() {
@@ -125,6 +140,20 @@ async function getWalletBalance(wallet) {
   }
 }
 
+/**
+ * raw tx 생성후 지갑 사인후 memPool에 해당 tx 를 넘길 수 있음
+ */
+async function signRawTxWithWallet(wallet, rawTx) {
+  try {
+    const newRpcOption = [...RPC_OPTION, `-rpcwallet=${wallet}`];
+    const params = [...newRpcOption, `signrawtransactionwithwallet`, rawTx];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return JSON.parse(cmdResult);
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
   getListWallets,
   createWallet,
@@ -135,4 +164,6 @@ module.exports = {
   getAddressInfo,
   getWalletBalances,
   getWalletBalance,
+  authWalletPassPhrase,
+  signRawTxWithWallet,
 };

@@ -65,9 +65,51 @@ async function getUnspentTxOutput(outputInfo) {
   }
 }
 
+/**
+ * 트랜잭션 생성
+ */
+async function createRawTransaction(params) {
+  const { from, to } = params;
+  try {
+    const params = [...RPC_OPTION, `createrawtransaction`, from, to];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return cmdResult;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
+ * 해당 트랜잭션이 mempool 에 accept 가능한지 확인
+ */
+async function testMemPoolAccept(signedRawTx) {
+  try {
+    const params = [...RPC_OPTION, `testmempoolaccept`, signedRawTx];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return cmdResult.length > 0 ? JSON.parse(cmdResult)[0] : null;
+  } catch (err) {
+    throw err;
+  }
+}
+
+/**
+ * 해당 트랜잭션이 mempool 에 accept 가능한지 확인
+ */
+async function sendRawTransaction(signedRawTx) {
+  try {
+    const params = [...RPC_OPTION, `sendrawtransaction`, signedRawTx];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+    return cmdResult;
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
   getRawTransaction,
   getDecodeRawTransaction,
   createRawTransaction,
   getUnspentTxOutput,
+  testMemPoolAccept,
+  sendRawTransaction,
 };

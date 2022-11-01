@@ -31,19 +31,22 @@ const updateUtxoJob = new CronJob(
   "Asia/Seoul"
 );
 
-spentJob.start();
-updateUtxoJob.start();
+spentJob.start(); // 큐에 쌓은 output 이 mempool 등록 및 confirmed 상태인지 확인
+updateUtxoJob.start(); // unspent 상태인 tx의 output 들을 큐에 쌓음 - 잔액 개념
 
-// uxto 업데이트
+// uxto 조회 및 큐에 쌓음
 async function updateUnspentOutputs() {
   try {
     if (utxoQueue.length > 0) {
       return;
     }
-    await resetUnspentOutputs();
+    await resetUnspentOutputs(); // db 에서 unspent 상태의 tx output 큐에 쌓음
+
     utxoQueue = cronCache.get(UNSPENT_OUTPUTS);
+    utxoId = utxoQueue.map((el) => el.id); // unspent 상태의 tx output 키값
+
+    // db 상 utxo 잔액 합
     const balance = utxoQueue.reduce(reduceSumBigAmount, 0);
-    utxoId = utxoQueue.map((el) => el.id);
 
     const {
       mine: { trusted, untrusted_pending, immature },
@@ -53,8 +56,8 @@ async function updateUnspentOutputs() {
     debugLog("UTXO Unspent Output Ids", utxoId, 30);
     debugLog("UTXO Unspent Output Sum", `${balance} BTC`, 30);
     debugLog(
-      "UTXO RPC Server Wallet",
-      `${trusted} BTC [ ${WALLET_NAME} ] `,
+      "UTXO RPC Wallet",
+      `${new Big(trusted).toFixed(8)} BTC [ ${WALLET_NAME} ] `,
       30
     );
   } catch (err) {
@@ -62,6 +65,7 @@ async function updateUnspentOutputs() {
   }
 }
 
+// bitcoin cli 명령어로 해당 output 상태 조회 및 db 업데이트
 async function checkOutputSpent() {
   let conn = null;
 

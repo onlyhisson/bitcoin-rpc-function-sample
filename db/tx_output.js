@@ -55,6 +55,8 @@ async function findTxOutputByTxidId(conn, params) {
 
 // unspent output 조회 - 잔액 개념
 async function findUnspentTxOutputs(conn, params) {
+  let conditions = [];
+
   let qry = " SELECT ";
   qry += "  tout.id, ";
   qry += "  bt.txid, ";
@@ -64,11 +66,15 @@ async function findUnspentTxOutputs(conn, params) {
   qry += " FROM btc_wallet_dev.tx_output tout ";
   qry += "  INNER JOIN btc_wallet_dev.block_tx bt ";
   qry += "  ON bt.id = tout.txid_id ";
-  qry += " WHERE is_spent = 0 ";
+  qry += " WHERE tout.is_spent = 0 ";
+  if (params.address) {
+    qry += " AND tout.address = ? ";
+    conditions.push(params.address);
+  }
   qry += " ORDER BY tout.id";
   return new Promise(async (resolve, reject) => {
     try {
-      const [rows] = await conn.execute(qry, []);
+      const [rows] = await conn.execute(qry, conditions);
       resolve(rows);
     } catch (err) {
       reject(err);
