@@ -12,6 +12,7 @@ async function get(req, res, next) {
 
 async function post(req, res, next) {
   try {
+    console.log("req.body : ", req.body);
     const data = await service.createWalletOne(req.body);
     successRespFormat(res, { wallet: data });
   } catch (err) {

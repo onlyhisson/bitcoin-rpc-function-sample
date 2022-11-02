@@ -4,22 +4,24 @@ const controller = require("../controllers/block.controller");
 
 /**
  * @swagger
- * tags:
+ *  tags:
  *   - name: Block
- *     description: Block
+ *     description: 블록
  */
 
 /**
  * @swagger
  * /block:
  *   get:
- *     description: Block to the application
+ *     description: 블록체인 정보
  *     tags: [Block]
  *     produces:
  *       - application/json
  *     responses:
  *       200:
  *         description: block
+ *       400:
+ *         description: Invalid request
  */
 router.get("/", controller.get);
 

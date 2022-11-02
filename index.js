@@ -43,6 +43,7 @@ app.use((err, req, res, next) => {
     success: false,
     message: err.message,
   });
+  return;
 });
 
 app.listen(port, () => {

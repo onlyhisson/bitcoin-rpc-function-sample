@@ -42,7 +42,7 @@ async function get() {
 async function createWalletOne(params) {
   let conn = null;
   try {
-    const { name, desc, pass_phase: passPhase } = params;
+    const { name, desc, passPhase } = params;
 
     if (isNull(name) || isNull(passPhase) || isNull(desc)) {
       throw { message: `invalid parameter` };
