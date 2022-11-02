@@ -47,7 +47,7 @@ router.get("/", async function (req, res) {
  * @swagger
  * /block/last:
  *   get:
- *     description: 마지막 블록 데이터 조회 함수
+ *     description: 마지막 블록 데이터 조회
  *     tags: [Block]
  *     produces:
  *       - application/json
@@ -75,6 +75,33 @@ router.get("/last", async function (req, res) {
   }
 });
 
+/**
+ * @swagger
+ * /block/{block_no}:
+ *  get:
+ *    summary: "특정 블록 넘버 정보 조회"
+ *    description: 마지막 블록 데이터 조회
+ *    tags: [Block]
+ *    parameters:
+ *      - in: path
+ *        name: block_no
+ *        required: true
+ *        description: 특정 블록 넘버
+ *        schema:
+ *          type: string
+ *    responses:
+ *      "200":
+ *        description: 특정 블록 정보 상세
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                success:
+ *                  type: boolean
+ *                data:
+ *                  type: object
+ */
 router.get("/:blocknum", async function (req, res) {
   // 특정 블록 데이터 조회 함수
   try {
