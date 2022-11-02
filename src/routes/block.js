@@ -35,7 +35,7 @@ router.get("/", controller.get);
  *       200:
  *         description: block
  */
-router.get("/last", controller.lastOne);
+router.get("/last", controller.findLastOne);
 
 /**
  * @swagger

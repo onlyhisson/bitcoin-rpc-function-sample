@@ -6,6 +6,7 @@ const { debugLog } = require("../util");
 const WHITE_LIST_IP = [
   "::ffff:112.155.110.41", // home
   "::ffff:10.10.11.1", // local
+  "::ffff:192.168.0.1", // local
 ];
 
 function getReqInfo(app) {

@@ -94,6 +94,11 @@ function validateCoinAmount(value, option) {
   }
 }
 
+// 응답 포맷
+function successRespFormat(res, data) {
+  res.json({ success: true, data: { ...data } });
+}
+
 module.exports = {
   executeCommand,
   wait,
@@ -102,4 +107,5 @@ module.exports = {
   decodeBitcoinRawTx: decodeRawTx,
   debugLog,
   validateCoinAmount,
+  successRespFormat,
 };
