@@ -6,15 +6,15 @@ const swaggerUi = require("swagger-ui-express");
 const { origin, jsDoc } = require("./swagger");
 const swaggerJsdoc = require("swagger-jsdoc");
 // routes
-const block = require("./routes/block");
-const wallet = require("./routes/wallet");
-const transaction = require("./routes/transaction");
-const assets = require("./routes/assets");
+const block = require("./src/routes/block");
+const wallet = require("./src/routes/wallet");
+const transaction = require("./src/routes/transaction");
+const assets = require("./src/routes/assets");
 
-const { debugLog } = require("./util");
+const { debugLog } = require("./src/util");
 const port = process.env.PORT;
 
-require("./middlewares")(app);
+require("./src/middlewares")(app);
 
 app.use(
   "/api-docs",

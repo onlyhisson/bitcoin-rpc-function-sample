@@ -18,7 +18,7 @@ const jsDoc = {
       description: "비트코인 지갑 API 문서",
     },
   },
-  apis: ["./routes/*.js"], // files containing annotations as above
+  apis: ["./src/routes/*.js"], // files containing annotations as above
 };
 
 module.exports = { origin, jsDoc };

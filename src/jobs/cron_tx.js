@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "../.env" });
+require("dotenv").config({ path: "../../.env" });
 const CronJob = require("cron").CronJob;
 
 const { decodeBitcoinRawTx, debugLog } = require("../util");
