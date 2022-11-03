@@ -18,6 +18,7 @@ const {
   saveWallet,
   saveWalletAddress,
 } = require("../db/wallet");
+const { resetWalletList } = require("../jobs");
 
 async function get() {
   let conn = null;
@@ -133,6 +134,8 @@ async function createAddress(params) {
       label,
       address,
     });
+
+    // here
 
     return { id: insertId, label, address, type };
   } catch (err) {

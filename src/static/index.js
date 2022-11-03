@@ -1,3 +1,5 @@
+require("dotenv").config({ path: "../../.env" });
+
 const BITCOIN_CMD = "bitcoin-cli";
 
 const RPC_INFO = {
