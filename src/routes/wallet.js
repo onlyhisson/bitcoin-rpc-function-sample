@@ -91,7 +91,8 @@ const controller = require("../controllers/wallet.controller");
  * @swagger
  * /wallets:
  *   get:
- *     description: 지갑 정보 조회
+ *     summary: 지갑 정보 조회
+ *     description: DB 데이터 기준, RPC 서버의 전부 혹은 일부 지갑
  *     tags: [Wallets]
  *     produces:
  *       - application/json
@@ -231,7 +232,8 @@ router.post("/address", controller.createAddress);
  * @swagger
  * /wallets/{walletId}/label/{label}:
  *   get:
- *     description: 지갑 + 라벨 정보로 주소 조회
+ *     summary: 지갑과 라벨로 주소 조회
+ *     description: 비트코인 클라이언트 프로그램의 기능, 라벨은 태그 개념
  *     tags: [Wallets]
  *     parameters:
  *       - in: path
@@ -284,7 +286,8 @@ router.get("/:walletId/label/:label", controller.findAddressesByWalletLabel);
  * @swagger
  * /wallets/{walletId}/addresses/balance:
  *   get:
- *     description: 지갑 정보로 각 주소 잔액 조회
+ *     summary: 지갑별 각 주소 잔액 조회
+ *     description: 지갑별 각 주소 잔액 조회
  *     tags: [Wallets]
  *     parameters:
  *       - in: path

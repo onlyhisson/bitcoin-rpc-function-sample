@@ -13,6 +13,7 @@ const controller = require("../controllers/block.controller");
  * @swagger
  * /blocks:
  *   get:
+ *     summary: 블록체인 정보
  *     description: 블록체인 정보
  *     tags: [Blocks]
  *     produces:
@@ -29,6 +30,7 @@ router.get("/", controller.get);
  * @swagger
  * /blocks/last:
  *   get:
+ *     summary: 마지막 블록 데이터 조회
  *     description: 마지막 블록 데이터 조회
  *     tags: [Blocks]
  *     produces:
