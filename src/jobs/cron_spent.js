@@ -1,11 +1,6 @@
-require("dotenv").config({ path: "../../.env" });
-const Big = require("big.js");
 const CronJob = require("cron").CronJob;
+const Big = require("big.js");
 
-const { debugLog } = require("../util");
-const { wallet, transaction } = require("../util/rpc");
-const { getUnspentTxOutput } = transaction;
-const { getWalletBalance } = wallet;
 const { getConnection } = require("../db");
 const { findByTxid } = require("../db/block_tx");
 const { updateUnspentTxOutputs } = require("../db/tx_output");
@@ -14,7 +9,20 @@ const {
   updateWithdrawalCoinReqById,
 } = require("../db/assets");
 
-const { cronCache, resetUnspentOutputs, UNSPENT_OUTPUTS } = require(".");
+const { debugLog } = require("../util");
+const {
+  getCacheInstance,
+  WALLET_LIST,
+  UNSPENT_OUTPUTS,
+} = require("../util/cache");
+const { wallet, transaction } = require("../util/rpc");
+const { getWalletBalance } = wallet;
+const { getUnspentTxOutput } = transaction;
+
+const { initCron, resetUnspentOutputs } = require("./");
+
+const cronCache = getCacheInstance();
+initCron();
 
 const WALLET_NAME = "wallet1"; // 임시
 const ONCE_OUTPUT_CNT = 10;

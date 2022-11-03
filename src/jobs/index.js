@@ -1,15 +1,14 @@
-require("dotenv").config({ path: "./.env" });
-
-const NodeCache = require("node-cache");
-const cronCache = new NodeCache();
-
 const { getConnection } = require("../db");
 const { getAddressList } = require("../db/wallet");
 const { findUnspentTxOutputs } = require("../db/tx_output");
-const { debugLog } = require("../util");
+const { debugLog, wait } = require("../util");
+const {
+  WALLET_LIST,
+  UNSPENT_OUTPUTS,
+  getCacheInstance,
+} = require("../util/cache");
 
-const WALLET_LIST = "walletList";
-const UNSPENT_OUTPUTS = "unspentOutputs";
+const cronCache = getCacheInstance();
 
 // 관리 지갑 주소 조회 및 캐싱
 async function setWalletList() {
@@ -53,15 +52,18 @@ async function setUnspentOutput() {
 async function initCron() {
   try {
     const walletList = cronCache.get(WALLET_LIST);
-    const utxos = cronCache.get(UNSPENT_OUTPUTS);
     if (walletList === undefined) {
       await setWalletList();
     }
+
+    const utxos = await cronCache.get(UNSPENT_OUTPUTS);
     if (utxos === undefined) {
       await setUnspentOutput();
     }
-
-    console.log(process.argv.slice(2));
+    const [cronName] = process.argv.slice(2);
+    if (!cronName) {
+      return;
+    }
   } catch (err) {
     console.log("Cron initialation ERROR : ", err);
   }
@@ -88,12 +90,9 @@ async function resetUnspentOutputs() {
   }
 }
 
-initCron();
-
 module.exports = {
   WALLET_LIST,
   UNSPENT_OUTPUTS,
-  cronCache,
   initCron,
   resetWalletList,
   resetUnspentOutputs,

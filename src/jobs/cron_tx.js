@@ -1,7 +1,4 @@
-require("dotenv").config({ path: "../../.env" });
 const CronJob = require("cron").CronJob;
-
-const { decodeBitcoinRawTx, debugLog } = require("../util");
 
 const { getConnection } = require("../db");
 const {
@@ -13,19 +10,20 @@ const {
 const { saveTxInputInfos } = require("../db/tx_input");
 const { saveTxOutputInfos } = require("../db/tx_output");
 
+const { decodeBitcoinRawTx, debugLog } = require("../util");
+const { getCacheInstance, WALLET_LIST } = require("../util/cache");
 const { transaction } = require("../util/rpc");
 const { getRawTransaction } = transaction;
 
-// 관리 지갑 목록 초기화
-const { cronCache, WALLET_LIST } = require("./");
+const { initCron } = require("./");
+
+const cronCache = getCacheInstance();
+initCron();
+
+const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
 
 const UPDATE_TX_ONCE = 55; // 한번 요청에 처리할 tx 개수
 let updatedLastTxId = 0;
-
-// 트랜잭션 정보 저장
-const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
-
-txJob.start();
 
 /**
  * 각 블록의 모든 트랜잭션을 조회 후
@@ -234,5 +232,5 @@ function checkCoinbase(vin) {
 }
 
 module.exports = {
-  txJob,
+  txDetail,
 };

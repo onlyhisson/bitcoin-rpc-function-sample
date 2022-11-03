@@ -1,19 +1,19 @@
-require("dotenv").config({ path: "../../.env" });
 const CronJob = require("cron").CronJob;
-
-const { debugLog } = require("../util");
 
 const { getConnection } = require("../db");
 const { saveBlockInfo, getDbLastBlockInfo } = require("../db/block");
 const { saveTxidInfos } = require("../db/block_tx");
 
+const { debugLog } = require("../util");
+const { getCacheInstance } = require("../util/cache");
 const { block } = require("../util/rpc");
 const { getBlockCount, getBlockHash, getBlock } = block;
 
-// 관리 지갑 목록 초기화
-const { cronCache } = require("./");
+const { initCron } = require("./");
 
-// 블록 정보 저장
+const cronCache = getCacheInstance();
+initCron();
+
 const blockTxidJob = new CronJob(
   " */10 * * * * *",
   blockTxid,
@@ -21,8 +21,6 @@ const blockTxidJob = new CronJob(
   true,
   "Asia/Seoul"
 );
-
-blockTxidJob.start();
 
 // cron func
 async function blockTxid() {
@@ -93,5 +91,5 @@ async function blockTxid() {
 }
 
 module.exports = {
-  blockTxidJob
-}
+  blockTxid,
+};
