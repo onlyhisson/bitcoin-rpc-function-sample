@@ -22,7 +22,7 @@ async function post(req, res, next) {
 
 async function createAddress(req, res, next) {
   try {
-    const data = await service.createAddress(req.body);
+    const data = await service.createAddress({ ...req.params, ...req.body });
     successRespFormat(res, { addressInfo: data });
   } catch (err) {
     next(err);

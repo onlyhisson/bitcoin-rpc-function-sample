@@ -60,6 +60,8 @@ async function initCron() {
     if (utxos === undefined) {
       await setUnspentOutput();
     }
+
+    console.log(process.argv.slice(2));
   } catch (err) {
     console.log("Cron initialation ERROR : ", err);
   }
@@ -70,7 +72,7 @@ async function resetWalletList() {
   try {
     await setWalletList();
     const walletList = cronCache.get(WALLET_LIST);
-    console.log("reset wallet list : ", walletList);
+    console.log("reset wallet count : ", walletList.length);
   } catch (err) {
     console.log("reset wallet list ERROR : ", err);
     throw err;
@@ -89,10 +91,10 @@ async function resetUnspentOutputs() {
 initCron();
 
 module.exports = {
+  WALLET_LIST,
+  UNSPENT_OUTPUTS,
   cronCache,
   initCron,
   resetWalletList,
   resetUnspentOutputs,
-  WALLET_LIST,
-  UNSPENT_OUTPUTS,
 };

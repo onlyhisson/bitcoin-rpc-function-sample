@@ -47,15 +47,10 @@ const controller = require("../controllers/wallet.controller");
  *           example: flock bleak bicycle comic palace coral describe enough client symptom arch journey
  *     AddressForm:
  *       required:
- *         - walletId
  *         - label
  *         - type
  *       type: object
  *       properties:
- *         walletId:
- *           type: integer
- *           description: 지갑 ID
- *           example: 1
  *         label:
  *           type: string
  *           description: 지갑의 주소에 라벨, 지갑별 중복X
@@ -184,11 +179,19 @@ router.post("/", controller.post);
 // 지갑 주소 추가
 /**
  * @swagger
- * /wallets/address:
+ * /wallets/{walletId}/address:
  *  post:
  *    summary: 지갑 주소 등록
  *    description: 해당 지갑에 주소를 추가하고 새로 생성된 지갑 주소 리턴
  *    tags: [Wallets]
+ *    parameters:
+ *      - in: path
+ *        name: walletId
+ *        required: true
+ *        description: 잔액 조회할 지갑의 ID
+ *        schema:
+ *          type: integer
+ *        example: 1
  *    requestBody:
  *      description: 지갑 등록시 지갑 이름, 암호화 문자열, 지갑 설명 필요
  *      required: true
@@ -226,7 +229,7 @@ router.post("/", controller.post);
  *               success: false
  *               message: error message
  */
-router.post("/address", controller.createAddress);
+router.post("/:walletId/address", controller.createAddress);
 
 /**
  * @swagger

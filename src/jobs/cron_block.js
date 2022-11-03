@@ -13,6 +13,17 @@ const { getBlockCount, getBlockHash, getBlock } = block;
 // 관리 지갑 목록 초기화
 const { cronCache } = require("./");
 
+// 블록 정보 저장
+const blockTxidJob = new CronJob(
+  " */10 * * * * *",
+  blockTxid,
+  null,
+  true,
+  "Asia/Seoul"
+);
+
+blockTxidJob.start();
+
 // cron func
 async function blockTxid() {
   let conn = null;
@@ -81,13 +92,6 @@ async function blockTxid() {
   }
 }
 
-// 블록 정보 저장
-const blockTxidJob = new CronJob(
-  " */10 * * * * *",
-  blockTxid,
-  null,
-  true,
-  "Asia/Seoul"
-);
-
-blockTxidJob.start();
+module.exports = {
+  blockTxidJob
+}

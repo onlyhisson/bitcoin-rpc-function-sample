@@ -38,7 +38,7 @@ const updateUtxoJob = new CronJob(
   "Asia/Seoul"
 );
 
-// 출금 신청 db 업데이트
+// 출금 신청 db 업데이트, unconfirmed -> confirmed
 const withdrawalReqJob = new CronJob(
   " */15 * * * * *",
   withdrawalReq,

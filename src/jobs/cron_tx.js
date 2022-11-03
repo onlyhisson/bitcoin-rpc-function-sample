@@ -25,6 +25,8 @@ let updatedLastTxId = 0;
 // 트랜잭션 정보 저장
 const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
 
+txJob.start();
+
 /**
  * 각 블록의 모든 트랜잭션을 조회 후
  * 해당 트랜잭션이 관리하는 지갑 주소와 관련이 있는지 확인
@@ -231,4 +233,6 @@ function checkCoinbase(vin) {
   return vin[0].coinbase ? true : false;
 }
 
-txJob.start();
+module.exports = {
+  txJob,
+};
