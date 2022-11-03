@@ -5,7 +5,7 @@ const controller = require("../controllers/wallet.controller");
 /**
  * @swagger
  * tags:
- *   - name: Wallet
+ *   - name: Wallets
  *     description: 지갑
  */
 
@@ -89,10 +89,10 @@ const controller = require("../controllers/wallet.controller");
 
 /**
  * @swagger
- * /wallet:
+ * /wallets:
  *   get:
  *     description: 지갑 정보 조회
- *     tags: [Wallet]
+ *     tags: [Wallets]
  *     produces:
  *       - application/json
  *     responses:
@@ -136,11 +136,11 @@ router.get("/", controller.get);
 
 /**
  * @swagger
- * /wallet:
+ * /wallets:
  *  post:
  *    summary: 지갑 등록 - 관리자
  *    description: 지갑을 등록
- *    tags: [Wallet]
+ *    tags: [Wallets]
  *    requestBody:
  *      description: 지갑 등록시 지갑 이름, 암호화 문자열, 지갑 설명 필요
  *      required: true
@@ -183,11 +183,11 @@ router.post("/", controller.post);
 // 지갑 주소 추가
 /**
  * @swagger
- * /wallet/address:
+ * /wallets/address:
  *  post:
  *    summary: 지갑 주소 등록
  *    description: 해당 지갑에 주소를 추가하고 새로 생성된 지갑 주소 리턴
- *    tags: [Wallet]
+ *    tags: [Wallets]
  *    requestBody:
  *      description: 지갑 등록시 지갑 이름, 암호화 문자열, 지갑 설명 필요
  *      required: true
@@ -229,10 +229,10 @@ router.post("/address", controller.createAddress);
 
 /**
  * @swagger
- * /wallet/{walletId}/label/{label}:
+ * /wallets/{walletId}/label/{label}:
  *   get:
  *     description: 지갑 + 라벨 정보로 주소 조회
- *     tags: [Wallet]
+ *     tags: [Wallets]
  *     parameters:
  *       - in: path
  *         name: walletId
@@ -282,10 +282,10 @@ router.get("/:walletId/label/:label", controller.findAddressesByWalletLabel);
 
 /**
  * @swagger
- * /wallet/balances/{walletId}:
+ * /wallets/{walletId}/addresses/balance:
  *   get:
  *     description: 지갑 정보로 각 주소 잔액 조회
- *     tags: [Wallet]
+ *     tags: [Wallets]
  *     parameters:
  *       - in: path
  *         name: walletId
@@ -337,6 +337,6 @@ router.get("/:walletId/label/:label", controller.findAddressesByWalletLabel);
  *               success: false
  *               message: error message
  */
-router.get("/balances/:walletId", controller.findBalancesByWallet);
+router.get("/:walletId/addresses/balance", controller.findBalancesByWallet);
 
 module.exports = router;

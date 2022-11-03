@@ -11,11 +11,12 @@ const wallet = require("./src/routes/wallet");
 const transaction = require("./src/routes/transaction");
 const assets = require("./src/routes/assets");
 
-const { debugLog } = require("./src/util");
 const port = process.env.PORT;
 
+// log, white list...
 require("./src/middlewares")(app);
 
+//swagger
 app.use(
   "/api-docs",
   swaggerUi.serve,
@@ -24,8 +25,8 @@ app.use(
 app.use("/swagger", express.static(__dirname + "/swagger", {}));
 
 // routes
-app.use("/block", block);
-app.use("/wallet", wallet);
+app.use("/blocks", block);
+app.use("/wallets", wallet);
 app.use("/tx", transaction);
 app.use("/assets", assets);
 

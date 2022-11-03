@@ -5,16 +5,16 @@ const controller = require("../controllers/block.controller");
 /**
  * @swagger
  *  tags:
- *   - name: Block
+ *   - name: Blocks
  *     description: 블록
  */
 
 /**
  * @swagger
- * /block:
+ * /blocks:
  *   get:
  *     description: 블록체인 정보
- *     tags: [Block]
+ *     tags: [Blocks]
  *     produces:
  *       - application/json
  *     responses:
@@ -27,10 +27,10 @@ router.get("/", controller.get);
 
 /**
  * @swagger
- * /block/last:
+ * /blocks/last:
  *   get:
  *     description: 마지막 블록 데이터 조회
- *     tags: [Block]
+ *     tags: [Blocks]
  *     produces:
  *       - application/json
  *     responses:
@@ -41,11 +41,11 @@ router.get("/last", controller.findLastOne);
 
 /**
  * @swagger
- * /block/{blockNo}:
+ * /blocks/{blockNo}:
  *  get:
  *    summary: 특정 블록 넘버 정보 조회
  *    description: 마지막 블록 데이터 조회
- *    tags: [Block]
+ *    tags: [Blocks]
  *    parameters:
  *      - in: path
  *        name: block_no
