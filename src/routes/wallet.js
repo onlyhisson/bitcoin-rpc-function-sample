@@ -54,7 +54,7 @@ const controller = require("../controllers/wallet.controller");
  *       properties:
  *         walletId:
  *           type: integer
- *           description: 지갑 키값
+ *           description: 지갑 ID
  *           example: 1
  *         label:
  *           type: string
@@ -64,6 +64,27 @@ const controller = require("../controllers/wallet.controller");
  *           type: integer
  *           description: 주소 타입 (bech32 || p2sh-segwit || legacy)
  *           example: bech32
+ *     Balance:
+ *       type: object
+ *       properties:
+ *         walletId:
+ *           type: integer
+ *           description: 지갑 ID
+ *         addressId:
+ *           type: integer
+ *           description: 주소 ID
+ *         label:
+ *           type: string
+ *           description: 라벨명
+ *         address:
+ *           type: string
+ *           description: 주소
+ *         amount:
+ *           type: integer
+ *           description: 잔액
+ *         desc:
+ *           type: string
+ *           description: 지갑 설명
  */
 
 /**
@@ -106,7 +127,7 @@ const controller = require("../controllers/wallet.controller");
  *           application/json:
  *             schema:
  *               type: object
- *               $ref: '#/components/schemas/ERROR'
+ *               $ref: '#/components/schemas/Error'
  *             example:
  *               success: false
  *               message: error message
@@ -117,8 +138,8 @@ router.get("/", controller.get);
  * @swagger
  * /wallet:
  *  post:
- *    summary: "지갑 등록"
- *    description: "POST 방식으로 지갑을 등록"
+ *    summary: 지갑 등록 - 관리자
+ *    description: POST 방식으로 지갑을 등록
  *    tags: [Wallet]
  *    requestBody:
  *      description: 지갑 등록시 지갑 이름, 암호화 문자열, 지갑 설명 필요
@@ -152,7 +173,7 @@ router.get("/", controller.get);
  *           application/json:
  *             schema:
  *               type: object
- *               $ref: '#/components/schemas/ERROR'
+ *               $ref: '#/components/schemas/Error'
  *             example:
  *               success: false
  *               message: error message
@@ -164,8 +185,8 @@ router.post("/", controller.post);
  * @swagger
  * /wallet/address:
  *  post:
- *    summary: "지갑 주소 등록"
- *    description: "해당 지갑에 주소를 추가한다"
+ *    summary: 지갑 주소 등록
+ *    description: 해당 지갑에 주소를 추가한다
  *    tags: [Wallet]
  *    requestBody:
  *      description: 지갑 등록시 지갑 이름, 암호화 문자열, 지갑 설명 필요
@@ -199,17 +220,123 @@ router.post("/", controller.post);
  *           application/json:
  *             schema:
  *               type: object
- *               $ref: '#/components/schemas/ERROR'
+ *               $ref: '#/components/schemas/Error'
  *             example:
  *               success: false
  *               message: error message
  */
 router.post("/address", controller.createAddress);
 
-// 지갑 + 라벨 정보로 주소 조회
-router.get("/label", controller.findAddressesByWalletLabel);
+/**
+ * @swagger
+ * /wallet/{walletId}/label/{label}:
+ *   get:
+ *     description: 지갑 + 라벨 정보로 주소 조회
+ *     tags: [Wallet]
+ *     parameters:
+ *       - in: path
+ *         name: walletId
+ *         required: true
+ *         description: 잔액 조회할 지갑의 ID
+ *         schema:
+ *           type: integer
+ *         example: 6
+ *       - in: path
+ *         name: label
+ *         required: true
+ *         description: 라벨명
+ *         schema:
+ *           type: string
+ *         example: label1
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     addressInfos:
+ *                       type: array
+ *                       description: RPC 응답 데이터 포맷
+ *                       example:
+ *                         - address: bc1q5c5p6frfjf6avs4u74xmuyc9wf29qspa5r54ss
+ *                           scriptPubKey: 0014a6281d24699275d642bcf54dbe1305725450403d
+ *                           label: array
+ *       500:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               message: error message
+ *
+ */
+router.get("/:walletId/label/:label", controller.findAddressesByWalletLabel);
 
-// 지갑 정보로 각 주소 잔액 조회
+/**
+ * @swagger
+ * /wallet/balances/{walletId}:
+ *   get:
+ *     description: 지갑 정보로 각 주소 잔액 조회
+ *     tags: [Wallet]
+ *     parameters:
+ *       - in: path
+ *         name: walletId
+ *         required: true
+ *         description: 잔액 조회할 지갑의 ID
+ *         schema:
+ *           type: integer
+ *         example: 1
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     walletName:
+ *                       type: string
+ *                       example: wallet1
+ *                     balances:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Balance'
+ *                       example:
+ *                        - walletId: 6
+ *                          addressId: 7
+ *                          label: label2
+ *                          address: bc1q2nvzu334xz7r30fse82fwwfqr6aetctx6gtsk4
+ *                          amount: 0.00028988
+ *                          desc: rpc 서버 지갑 실테스트
+ *                        - walletId: 6
+ *                          addressId: 6
+ *                          label: label1
+ *                          address: bc1q5c5p6frfjf6avs4u74xmuyc9wf29qspa5r54ss
+ *                          amount: 0.00027339
+ *                          desc: rpc 서버 지갑 실테스트
+ *
+ *       500:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               message: error message
+ */
 router.get("/balances/:walletId", controller.findBalancesByWallet);
 
 module.exports = router;

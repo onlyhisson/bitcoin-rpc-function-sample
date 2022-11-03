@@ -30,6 +30,7 @@ async function get() {
   } catch (err) {
     console.error("[ERROR] : ", err);
     throw {
+      ...err,
       message: err.message ? err.message : "error",
     };
   } finally {
@@ -77,6 +78,7 @@ async function createWalletOne(params) {
   } catch (err) {
     console.error("[ERROR] : ", err);
     throw {
+      ...err,
       message: err.message ? err.message : "error",
     };
   } finally {
@@ -136,6 +138,7 @@ async function createAddress(params) {
   } catch (err) {
     console.error("[ERROR] : ", err);
     throw {
+      ...err,
       message: err.message ? err.message : "error",
     };
   } finally {
@@ -146,28 +149,40 @@ async function createAddress(params) {
 }
 
 async function findAddressesByWalletLabel(params) {
-  try {
-    const { wallet, label } = params;
+  let conn = null;
 
-    if (isNull(wallet) || isNull(label)) {
+  try {
+    const { walletId, label } = params;
+
+    if (isNull(walletId) || isNull(label)) {
       throw { message: `invalid parameter` };
     }
 
+    conn = await getConnection();
+    const wallets = await getWalletInfos(conn, { walletId });
+    if (wallets.length < 1) {
+      throw { message: "지갑 정보가 없습니다." };
+    }
+    const { name: walletName } = wallets[0];
+
     // 지갑 주소 정보
-    const addrObj = await getAddressesByLabel(wallet, label);
+    const addrObj = await getAddressesByLabel(walletName, label);
     const addresses = Object.keys(addrObj);
 
     const addrDetails = await Promise.all(
       addresses.map(async (el) => {
-        return await getAddressInfo(wallet, el); // 지갑 상세 정보
+        return await getAddressInfo(walletName, el); // 지갑 상세 정보
       })
     );
     return addrDetails;
   } catch (err) {
     console.error("[ERROR] : ", err);
     throw {
+      ...err,
       message: err.message ? err.message : "error",
     };
+  } finally {
+    if (conn) conn.release();
   }
 }
 
@@ -213,6 +228,7 @@ async function findBalancesByWallet(params) {
   } catch (err) {
     console.error("[ERROR] : ", err);
     throw {
+      ...err,
       message: err.message ? err.message : "error",
     };
   } finally {

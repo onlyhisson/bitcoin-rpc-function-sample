@@ -41,9 +41,9 @@ router.get("/last", controller.findLastOne);
 
 /**
  * @swagger
- * /block/{block_no}:
+ * /block/{blockNo}:
  *  get:
- *    summary: "특정 블록 넘버 정보 조회"
+ *    summary: 특정 블록 넘버 정보 조회
  *    description: 마지막 블록 데이터 조회
  *    tags: [Block]
  *    parameters:
@@ -52,9 +52,10 @@ router.get("/last", controller.findLastOne);
  *        required: true
  *        description: 특정 블록 넘버
  *        schema:
- *          type: string
+ *          type: integer
+ *        example: 1
  *    responses:
- *      "200":
+ *      200:
  *        description: 특정 블록 정보 상세
  *        content:
  *          application/json:
