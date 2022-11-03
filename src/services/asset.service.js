@@ -114,10 +114,8 @@ async function createWithdrawalCoinReq(params) {
 
     return {
       label,
-      address: {
-        from: address,
-        to: toAddress,
-      },
+      from: address,
+      to: toAddress,
       amount: newAmt,
       freezeAmt,
       fee: FEE,

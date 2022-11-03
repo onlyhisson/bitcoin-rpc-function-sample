@@ -61,8 +61,8 @@ const controller = require("../controllers/wallet.controller");
  *           description: 지갑의 주소에 라벨, 지갑별 중복X
  *           example: walletlabel
  *         type:
- *           type: integer
- *           description: 주소 타입 (bech32 || p2sh-segwit || legacy)
+ *           type: string
+ *           description: 주소 타입, bech32로 고정 예정 (bech32 || p2sh-segwit || legacy)
  *           example: bech32
  *     Balance:
  *       type: object
@@ -139,7 +139,7 @@ router.get("/", controller.get);
  * /wallet:
  *  post:
  *    summary: 지갑 등록 - 관리자
- *    description: POST 방식으로 지갑을 등록
+ *    description: 지갑을 등록
  *    tags: [Wallet]
  *    requestBody:
  *      description: 지갑 등록시 지갑 이름, 암호화 문자열, 지갑 설명 필요
@@ -186,7 +186,7 @@ router.post("/", controller.post);
  * /wallet/address:
  *  post:
  *    summary: 지갑 주소 등록
- *    description: 해당 지갑에 주소를 추가한다
+ *    description: 해당 지갑에 주소를 추가하고 새로 생성된 지갑 주소 리턴
  *    tags: [Wallet]
  *    requestBody:
  *      description: 지갑 등록시 지갑 이름, 암호화 문자열, 지갑 설명 필요
