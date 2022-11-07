@@ -11,7 +11,7 @@ const controller = require("../controllers/block.controller");
 
 /**
  * @swagger
- * /blocks:
+ * /btc/blockinfo:
  *   get:
  *     summary: 블록체인 정보
  *     description: 블록체인 정보
@@ -21,14 +21,21 @@ const controller = require("../controllers/block.controller");
  *     responses:
  *       200:
  *         description: block
- *       400:
- *         description: Invalid request
+ *       500:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               message: error message
  */
-router.get("/", controller.get);
+router.get("/blockinfo", controller.get);
 
 /**
  * @swagger
- * /blocks/last:
+ * /btc/lastblock:
  *   get:
  *     summary: 마지막 블록 데이터 조회
  *     description: 마지막 블록 데이터 조회
@@ -38,19 +45,28 @@ router.get("/", controller.get);
  *     responses:
  *       200:
  *         description: block
+ *       500:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               message: error message
  */
-router.get("/last", controller.findLastOne);
+router.get("/lastblock", controller.findLastOne);
 
 /**
  * @swagger
- * /blocks/{blockNo}:
+ * /btc/blocks/{blockNo}:
  *  get:
  *    summary: 특정 블록 넘버 정보 조회
  *    description: 마지막 블록 데이터 조회
  *    tags: [Blocks]
  *    parameters:
  *      - in: path
- *        name: block_no
+ *        name: blockNo
  *        required: true
  *        description: 특정 블록 넘버
  *        schema:
@@ -69,6 +85,6 @@ router.get("/last", controller.findLastOne);
  *                data:
  *                  type: object
  */
-router.get("/:blocknum", controller.findOneByBlockNum);
+router.get("/blocks/:blocknum", controller.findOneByBlockNum);
 
 module.exports = router;

@@ -63,7 +63,12 @@ function debugLog(label, content, pad = 20) {
   const newLabel = label.padEnd(pad, " ");
   const fTime = getFormatDate();
   const newContent = content ? `: ${content}` : "";
-  console.log(`[ ${fTime} ] - ${newLabel}${newContent}`);
+  const log = `[ ${fTime} ] - ${newLabel}${newContent}`;
+  if (label.toLowerCase().indexOf("error") > 0) {
+    console.error(log);
+  } else {
+    console.log(log);
+  }
 }
 
 function validateCoinAmount(value, option) {
