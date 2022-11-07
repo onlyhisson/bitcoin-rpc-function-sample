@@ -17,6 +17,7 @@ const {
   getWalletAddressList,
   saveWallet,
   saveWalletAddress,
+  findWalletAddress,
 } = require("../db/wallet");
 const { resetWalletList } = require("../jobs");
 
@@ -135,8 +136,6 @@ async function createAddress(params) {
       address,
     });
 
-    // here
-
     return { id: insertId, label, address, type };
   } catch (err) {
     console.error("[ERROR] : ", err);
@@ -207,20 +206,28 @@ async function findBalancesByWallet(params) {
     }
     const { name: walletName } = walletList[0];
 
-    // 잔액 조회시 RPC 서버에서 생성한 지갑이 아니면 RPC 잔액조회 에러발생
-    const rows = await getWalletBalances(walletName);
-    const rowsEl = rows.map((el) => el[0]);
-    const balances = rowsEl.map((el) => {
-      const [address, amount, label] = el;
-      const walletInfos = walletList.filter((el) => el.address === address);
+    const addressList = await getWalletAddressList(conn, { walletId });
 
+    // 잔액 조회시 RPC 서버에서 생성한 지갑이 아니면 RPC 잔액조회 에러발생
+    const rpcResult = await getWalletBalances(walletName);
+    const rpcBalances = rpcResult.map((el) => el[0]);
+
+    const balanceObjs = {};
+
+    rpcBalances.forEach((el) => {
+      const [address, amount, label] = el;
+      balanceObjs[address] = amount;
+    });
+
+    const balances = addressList.map((el) => {
+      const amount = balanceObjs[el.address] ? balanceObjs[el.address] : 0;
       return {
-        walletId: walletInfos[0].wallet_id,
-        addressId: walletInfos[0].address_id,
-        label,
-        address,
+        walletId: el.wallet_id,
+        addressId: el.address_id,
+        label: el.label,
+        address: el.address,
         amount,
-        desc: walletInfos.length > 0 ? walletInfos[0].desc : "",
+        desc: el.desc ? el.desc : "",
       };
     });
 

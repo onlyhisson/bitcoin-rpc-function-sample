@@ -31,7 +31,10 @@ async function createAddress(req, res, next) {
 
 async function findAddressesByWalletLabel(req, res, next) {
   try {
-    const data = await service.findAddressesByWalletLabel(req.params);
+    const data = await service.findAddressesByWalletLabel({
+      ...req.params,
+      ...req.query,
+    });
     successRespFormat(res, { addressInfos: data });
   } catch (err) {
     next(err);

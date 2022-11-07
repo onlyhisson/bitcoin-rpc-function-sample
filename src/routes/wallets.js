@@ -60,7 +60,7 @@ router.get("/", controller.get);
 // 지갑 주소 추가
 /**
  * @swagger
- * /wallets/{walletId}/address:
+ * /btc/wallets/{walletId}/address:
  *  post:
  *    summary: 지갑 주소 등록
  *    description: 해당 지갑에 주소를 추가하고 새로 생성된 지갑 주소 리턴
@@ -114,7 +114,7 @@ router.post("/:walletId/address", controller.createAddress);
 
 /**
  * @swagger
- * /wallets/{walletId}/label/{label}:
+ * /btc/wallets/{walletId}/addresses:
  *   get:
  *     summary: 지갑과 라벨로 주소 조회
  *     description: 비트코인 클라이언트 프로그램의 기능, 라벨은 태그 개념
@@ -127,7 +127,7 @@ router.post("/:walletId/address", controller.createAddress);
  *         schema:
  *           type: integer
  *         example: 6
- *       - in: path
+ *       - in: query
  *         name: label
  *         required: true
  *         description: 라벨명
@@ -164,11 +164,11 @@ router.post("/:walletId/address", controller.createAddress);
  *               message: error message
  *
  */
-router.get("/:walletId/label/:label", controller.findAddressesByWalletLabel);
+router.get("/:walletId/addresses", controller.findAddressesByWalletLabel);
 
 /**
  * @swagger
- * /wallets/{walletId}/addresses/balance:
+ * /btc/wallets/{walletId}/addresses/balance:
  *   get:
  *     summary: 지갑별 각 주소 잔액 조회
  *     description: 지갑별 각 주소 잔액 조회
