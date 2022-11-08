@@ -15,21 +15,24 @@ const { getCacheInstance, WALLET_LIST } = require("../util/cache");
 const { transaction } = require("../util/rpc");
 const { getRawTransaction } = transaction;
 
-const { initCron } = require("./");
-
 const cronCache = getCacheInstance();
-initCron();
-
-const txJob = new CronJob(" * * * * * *", txDetail, null, true, "Asia/Seoul");
+const TZ = process.env.TIMEZONE;
 
 const UPDATE_TX_ONCE = 55; // 한번 요청에 처리할 tx 개수
-let updatedLastTxId = 0;
+let updatedLastTxId = 0; // 마지막 업데이트 txid id 저장, 조회시 용이
+
+// 10분 간격으로 수백 ~ 3천중반 이상의 트랜잭션 발생
+// 최소 초당 5건 처리하면 속도를 맞출 수 있음(시간 단위 당 UPDATE_TX_ONCE)
+// 스케쥴러 초단위 1000ms > txDetail 실행 시간 800ms 정도, 시간 로그 남김
+// 스케쥴러 시간 단위를 넘어가는 처리가 있을 시 job stop start 함 (B)
+// 처리 속도에 따라 UPDATE_TX_ONCE 값을 줄이거나 늘리면 됨
+const txJob = new CronJob(" * * * * * *", txDetail, null, true, TZ); // 1초 간격
 
 /**
- * 각 블록의 모든 트랜잭션을 조회 후
+ * 1 각 블록의 모든 트랜잭션을 조회 후
  * 해당 트랜잭션이 관리하는 지갑 주소와 관련이 있는지 확인
  *
- * todo : inputs 의 트랜잭션 정보 조회 후 spent 상태인지 처리 필요
+ * 2 해당 트랜잭션의 inputs outputs 정보 저장
  */
 async function txDetail() {
   let conn = null;
@@ -38,7 +41,7 @@ async function txDetail() {
   let outAllParams = [];
 
   try {
-    // 일단 스톱, 이후 실행 코드에서 크론 주기 이상의 딜레이가 발생할 수 있음
+    // 일단 스톱, 아래 실행 코드에서 크론 주기 이상의 딜레이가 발생할 수 있음 (B)
     txJob.stop();
 
     // 관리하는 지갑 목록 조회
@@ -53,13 +56,15 @@ async function txDetail() {
 
     const startMil = new Date().getTime();
 
-    // 처리하지 않은 txid(업데이트 컬럼 === NULL) 중에서 첫번째
+    // 해당 트랜잭션이 관리하는 주소와 관련 된 것인지
+    // 확인 처리 하지 않은 txid(업데이트 컬럼 === NULL) 조회
     const uTxids = await findNotUpdatedTxid(conn, {
       lastIdx: updatedLastTxId,
       limit: UPDATE_TX_ONCE,
     }); // (A)
+
+    // 업데이트할 트랜잭션 없음
     if (uTxids.length < 1) {
-      //console.log("[트랜잭션] : 업데이트할 트랜잭션 없음");
       return;
     }
 
@@ -136,11 +141,16 @@ async function txDetail() {
     const now = new Date().getTime();
     const createdAt = Math.round(now / 1000);
 
+    // 업데이트 날짜 데이터를 입력함으로 해당 트랜잭션 확인 했음을 알림
+    // 한번에 여러 row를 업데이터 처리 쿼리를 위해 두번으로 나눔 (C) (D)
     const txIdIds = txDetails.map((el) => el.id);
-    await completedTxDetailInfos(conn, { time: createdAt, ids: txIdIds });
+    await completedTxDetailInfos(conn, { time: createdAt, ids: txIdIds }); //(C)
+
+    // 관리하는 주소와 관련 있는 트랜잭션 체크
     if (ourTxidId.length > 0) {
-      await updatedOurTx(conn, { ids: ourTxidId });
+      await updatedOurTx(conn, { ids: ourTxidId }); // (D)
     }
+
     await conn.commit(); // 트랜잭션 커밋
 
     const mill4 = new Date().getTime();
@@ -174,7 +184,7 @@ async function txDetail() {
     if (conn) {
       await conn.release();
     }
-    txJob.start();
+    txJob.start(); // (B)
   }
 }
 
@@ -232,5 +242,5 @@ function checkCoinbase(vin) {
 }
 
 module.exports = {
-  txDetail,
+  txJob,
 };

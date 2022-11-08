@@ -9,18 +9,10 @@ const { getCacheInstance } = require("../util/cache");
 const { block } = require("../util/rpc");
 const { getBlockCount, getBlockHash, getBlock } = block;
 
-const { initCron } = require("./");
-
 const cronCache = getCacheInstance();
-initCron();
+const TZ = process.env.TIMEZONE;
 
-const blockTxidJob = new CronJob(
-  " */10 * * * * *",
-  blockTxid,
-  null,
-  true,
-  "Asia/Seoul"
-);
+const blockTxidJob = new CronJob(" 0 * * * * *", blockTxid, null, true, TZ);
 
 // cron func
 async function blockTxid() {
@@ -30,9 +22,6 @@ async function blockTxid() {
   const now = new Date().getTime();
   const createdAt = Math.round(now / 1000);
 
-  console.log("");
-  debugLog("Block TX Start", "", 20);
-
   try {
     // 관리하는 지갑 목록 조회
     const walletList = cronCache.get("walletList");
@@ -40,8 +29,6 @@ async function blockTxid() {
       debugLog("Block TX ERROR", "Please update Wallet List", 20);
       return;
     }
-
-    debugLog("Block TX", `Wallet Address Count [ ${walletList.length} ]`, 20);
 
     conn = await getConnection();
 
@@ -55,14 +42,10 @@ async function blockTxid() {
 
     const lastBlock = Number(await getBlockCount());
 
-    debugLog("Block TX", `main net last block number no [ ${lastBlock} ]`, 20);
-
     if (updateBlockNum > lastBlock) {
-      debugLog("Block TX End", "last block info already updated", 20);
+      //debugLog("Block TX End", "last block info already updated", 20);
       return;
     }
-
-    debugLog("Block TX", `update block number no [ ${updateBlockNum} ]`, 20);
 
     const blockHash = await getBlockHash(updateBlockNum); // 특정 블록 해시값
     const blockInfo = await getBlock(blockHash); // 특정 블록 정보
@@ -79,6 +62,12 @@ async function blockTxid() {
     await saveTxidInfos(conn, txParams);
 
     await conn.commit(); // 트랜잭션 커밋
+
+    console.log("");
+    debugLog("Block TX Start", "", 20);
+    debugLog("Block TX", `Wallet Address Count [ ${walletList.length} ]`, 20);
+    debugLog("Block TX", `main net last block number no [ ${lastBlock} ]`, 20);
+    debugLog("Block TX", `update block number no [ ${updateBlockNum} ]`, 20);
     debugLog("Block TX End", `last block info update succeed`, 20);
   } catch (err) {
     debugLog("Block TX ERROR blockTxid", err, 20);
@@ -91,5 +80,5 @@ async function blockTxid() {
 }
 
 module.exports = {
-  blockTxid,
+  blockTxidJob,
 };

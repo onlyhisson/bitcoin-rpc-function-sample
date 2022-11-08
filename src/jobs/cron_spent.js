@@ -19,27 +19,22 @@ const { wallet, transaction } = require("../util/rpc");
 const { getWalletBalance } = wallet;
 const { getUnspentTxOutput } = transaction;
 
-const { initCron, resetUnspentOutputs } = require("./");
+const { resetUnspentOutputs } = require("./common");
 
 const cronCache = getCacheInstance();
-initCron();
+const TZ = process.env.TIMEZONE;
 
 const WALLET_NAME = "wallet1"; // 임시
 const ONCE_OUTPUT_CNT = 10;
 let utxoQueue = [];
 
 // 큐에 쌓은 output 이 mempool 등록 및 confirmed 상태인지 확인
-const spentJob = new CronJob(
-  " * * * * * *",
-  checkOutputSpent,
-  null,
-  true,
-  "Asia/Seoul"
-);
+const spentJob = new CronJob(" 30 * * * * *", checkOutputSpent, null, true, TZ);
 
 // unspent 상태인 tx의 output 들을 큐에 쌓음 - 잔액 개념
-const updateUtxoJob = new CronJob(
-  " */10 * * * * *",
+// 큐에 데이터 쌓여 있을 경우 stop, 비워지면 start
+const pushQueueUtxoJob = new CronJob(
+  " * * * * * *",
   updateUnspentOutputs,
   null,
   true,
@@ -48,16 +43,12 @@ const updateUtxoJob = new CronJob(
 
 // 출금 신청 db 업데이트, unconfirmed -> confirmed
 const withdrawalReqJob = new CronJob(
-  " */15 * * * * *",
+  " 40 * * * * *",
   withdrawalReq,
   null,
   true,
   "Asia/Seoul"
 );
-
-spentJob.start();
-updateUtxoJob.start();
-withdrawalReqJob.start();
 
 async function withdrawalReq() {
   let conn = null;
@@ -68,7 +59,13 @@ async function withdrawalReq() {
     });
 
     console.log();
-    debugLog("Unconfirmed Withdrawal Req", `[ ${unconfirms.length} ]`, 30);
+    // 출금 승인후 해당 트랜잭션이 아직 블록체인 블럭에 반영 되지 않은 건수
+    // 출금 요청 상태는 카운트 포함 X
+    debugLog(
+      "Withdrawal Req Unconfirmed count",
+      `[ ${unconfirms.length} ]`,
+      30
+    );
 
     if (unconfirms.length < 1) {
       return;
@@ -126,7 +123,7 @@ async function updateUnspentOutputs() {
     } = await getWalletBalance(WALLET_NAME);
 
     console.log();
-    debugLog("UTXO Unspent Output Ids", utxoId, 30);
+    debugLog("UTXO Unspent Output Count", utxoId.length, 30);
     debugLog("UTXO Unspent Output Sum", `${balance} BTC`, 30);
     debugLog(
       "UTXO RPC Wallet",
@@ -146,7 +143,7 @@ async function checkOutputSpent() {
     if (utxoQueue.length < 1) {
       return;
     }
-    updateUtxoJob.stop();
+    pushQueueUtxoJob.stop();
 
     const qLen = utxoQueue.length;
     const uxtos =
@@ -189,7 +186,7 @@ async function checkOutputSpent() {
     }
 
     if (utxoQueue.length === 0) {
-      updateUtxoJob.start();
+      pushQueueUtxoJob.start();
     }
   }
 }
@@ -201,3 +198,9 @@ function reduceSumBigAmount(pOutput, cOutput) {
   const y = new Big(cOutput.amount);
   return x.plus(y).toFixed(8);
 }
+
+module.exports = {
+  spentJob,
+  pushQueueUtxoJob,
+  withdrawalReqJob,
+};
