@@ -23,18 +23,11 @@ async function blockTxid() {
   const createdAt = Math.round(now / 1000);
 
   try {
-    // 관리하는 지갑 목록 조회
-    const walletList = cronCache.get("walletList");
-    if (walletList === undefined || walletList.length < 1) {
-      debugLog("Block TX ERROR", "Please update Wallet List", 20);
-      return;
-    }
-
     conn = await getConnection();
 
-    const rows = await getDbLastBlockInfo(conn);
-    if (rows.length > 0) {
-      const { block_no: dbLastBlockNum } = rows[0];
+    const lastBlockInfo = await getDbLastBlockInfo(conn);
+    if (lastBlockInfo.length > 0) {
+      const { block_no: dbLastBlockNum } = lastBlockInfo[0];
       if (updateBlockNum <= dbLastBlockNum) {
         updateBlockNum = dbLastBlockNum + 1;
       }
@@ -65,7 +58,7 @@ async function blockTxid() {
 
     console.log("");
     debugLog("Block TX Start", "", 20);
-    debugLog("Block TX", `Wallet Address Count [ ${walletList.length} ]`, 20);
+    //debugLog("Block TX", `Wallet Address Count [ ${walletList.length} ]`, 20);
     debugLog("Block TX", `main net last block number no [ ${lastBlock} ]`, 20);
     debugLog("Block TX", `update block number no [ ${updateBlockNum} ]`, 20);
     debugLog("Block TX End", `last block info update succeed`, 20);

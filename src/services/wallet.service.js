@@ -1,4 +1,4 @@
-const { isNull } = require("../util");
+const { isNull, wait } = require("../util");
 const rpc = require("../util/rpc");
 const {
   getListWallets,
@@ -10,6 +10,7 @@ const {
   getAddressInfo,
   getWalletBalances,
 } = rpc.wallet;
+const { getCacheInstance, ADDRESS_LIST } = require("../util/cache");
 const { BTC_ADDR_TYPE } = require("../static");
 const { getConnection } = require("../db");
 const {
@@ -19,7 +20,9 @@ const {
   saveWalletAddress,
   findWalletAddress,
 } = require("../db/wallet");
-const { resetWalletList } = require("../jobs");
+const { txInOutJob } = require("../jobs");
+
+const cronCache = getCacheInstance();
 
 async function get() {
   let conn = null;
@@ -106,6 +109,9 @@ async function createAddress(params) {
       throw { message: `invalid parameter(address type)` };
     }
 
+    // 발급한 주소와 관련된 트랜잭션 확인 스케쥴러 stop
+    txInOutJob.stop();
+
     conn = await getConnection();
 
     // 현재 지갑 목록 조회
@@ -136,6 +142,10 @@ async function createAddress(params) {
       address,
     });
 
+    // 주소 목록에 새로 생성한 지갑 주소 추가
+    const oldAddresses = cronCache.get(ADDRESS_LIST);
+    cronCache.set(ADDRESS_LIST, [...oldAddresses, address], 0);
+
     return { id: insertId, label, address, type };
   } catch (err) {
     console.error("[ERROR] : ", err);
@@ -147,6 +157,7 @@ async function createAddress(params) {
     if (conn) {
       conn.release();
     }
+    txInOutJob.start();
   }
 }
 

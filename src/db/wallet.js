@@ -70,7 +70,6 @@ async function getWalletAddressList(conn, params) {
   }
 
   return new Promise(async (resolve, reject) => {
-    console.log("conditions : ", conditions);
     const [rows] = await conn.execute(qry, conditions);
     resolve(rows);
   });

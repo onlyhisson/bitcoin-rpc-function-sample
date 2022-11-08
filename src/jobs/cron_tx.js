@@ -11,9 +11,11 @@ const { saveTxInputInfos } = require("../db/tx_input");
 const { saveTxOutputInfos } = require("../db/tx_output");
 
 const { decodeBitcoinRawTx, debugLog } = require("../util");
-const { getCacheInstance, WALLET_LIST } = require("../util/cache");
+const { getCacheInstance, ADDRESS_LIST } = require("../util/cache");
 const { transaction } = require("../util/rpc");
 const { getRawTransaction } = transaction;
+
+const { resetAddressList } = require("./common");
 
 const cronCache = getCacheInstance();
 const TZ = process.env.TIMEZONE;
@@ -26,7 +28,7 @@ let updatedLastTxId = 0; // 마지막 업데이트 txid id 저장, 조회시 용
 // 스케쥴러 초단위 1000ms > txDetail 실행 시간 800ms 정도, 시간 로그 남김
 // 스케쥴러 시간 단위를 넘어가는 처리가 있을 시 job stop start 함 (B)
 // 처리 속도에 따라 UPDATE_TX_ONCE 값을 줄이거나 늘리면 됨
-const txJob = new CronJob(" * * * * * *", txDetail, null, true, TZ); // 1초 간격
+const txInOutJob = new CronJob(" * * * * * *", txDetail, null, true, TZ); // 1초 간격
 
 /**
  * 1 각 블록의 모든 트랜잭션을 조회 후
@@ -42,13 +44,20 @@ async function txDetail() {
 
   try {
     // 일단 스톱, 아래 실행 코드에서 크론 주기 이상의 딜레이가 발생할 수 있음 (B)
-    txJob.stop();
+    txInOutJob.stop();
 
     // 관리하는 지갑 목록 조회
-    const walletList = cronCache.get(WALLET_LIST);
-    if (walletList === undefined || walletList.length < 1) {
+    const walletList = cronCache.get(ADDRESS_LIST);
+
+    if (walletList === undefined) {
+      await resetAddressList();
       debugLog("TX ERROR", "Please update Wallet List", 20);
       return;
+    }
+
+    // 관리 지갑 없는 경우
+    if (walletList.length < 1) {
+      debugLog("TX WARNING", "Wallet List Count 0", 20);
     }
 
     conn = await getConnection();
@@ -184,7 +193,7 @@ async function txDetail() {
     if (conn) {
       await conn.release();
     }
-    txJob.start(); // (B)
+    txInOutJob.start(); // (B)
   }
 }
 
@@ -242,5 +251,5 @@ function checkCoinbase(vin) {
 }
 
 module.exports = {
-  txJob,
+  txInOutJob,
 };

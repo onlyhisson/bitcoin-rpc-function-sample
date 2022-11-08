@@ -3,7 +3,7 @@ const { getAddressList } = require("../db/wallet");
 const { findUnspentTxOutputs } = require("../db/tx_output");
 const { debugLog, wait } = require("../util");
 const {
-  WALLET_LIST,
+  ADDRESS_LIST,
   UNSPENT_OUTPUTS,
   getCacheInstance,
 } = require("../util/cache");
@@ -11,15 +11,16 @@ const {
 const cronCache = getCacheInstance();
 
 // 관리 지갑 주소 조회 및 캐싱
-async function setWalletList() {
+async function setAddressList() {
   let conn = null;
   try {
     conn = await getConnection();
-    const walletObjs = await getAddressList(conn, {});
-    const wallets = walletObjs.map((el) => el.address);
-    debugLog("Set Wallet", `[ ${wallets.length} ]`, 20);
-    cronCache.set(WALLET_LIST, wallets, 0);
+    const addrObjs = await getAddressList(conn, {});
+    const addresses = addrObjs.map((el) => el.address);
+    debugLog("Set Wallet", `[ ${addresses.length} ]`, 20);
+    cronCache.set(ADDRESS_LIST, addresses, 0);
   } catch (err) {
+    throw err;
   } finally {
     if (conn) {
       conn.release();
@@ -41,6 +42,7 @@ async function setUnspentOutput() {
     }));
     cronCache.set(UNSPENT_OUTPUTS, utxos, 0);
   } catch (err) {
+    throw err;
   } finally {
     if (conn) {
       conn.release();
@@ -51,32 +53,27 @@ async function setUnspentOutput() {
 // 초기화
 async function initCron() {
   try {
-    const walletList = cronCache.get(WALLET_LIST);
-    if (walletList === undefined) {
-      await setWalletList();
+    const addresses = cronCache.get(ADDRESS_LIST);
+    if (addresses === undefined) {
+      await setAddressList();
     }
 
     const utxos = await cronCache.get(UNSPENT_OUTPUTS);
     if (utxos === undefined) {
       await setUnspentOutput();
     }
-    const [cronName] = process.argv.slice(2);
-    if (!cronName) {
-      return;
-    }
   } catch (err) {
-    console.log("Cron initialation ERROR : ", err);
+    debugLog("Cron initialation ERROR", err, 20);
   }
 }
 
 // 웰렛 변경 될 경우 reset
-async function resetWalletList() {
+async function resetAddressList() {
   try {
-    await setWalletList();
-    const walletList = cronCache.get(WALLET_LIST);
-    console.log("reset wallet count : ", walletList.length);
+    await setAddressList();
+    debugLog("Reset Address Data", "", 20);
   } catch (err) {
-    console.log("reset wallet list ERROR : ", err);
+    debugLog("Reset Address Data ERROR", err, 20);
     throw err;
   }
 }
@@ -85,15 +82,15 @@ async function resetUnspentOutputs() {
   try {
     await setUnspentOutput();
   } catch (err) {
-    console.log("reset unspent tx outputs ERROR : ", err);
+    debugLog("Reset unspent tx outputs ERROR", err, 20);
     throw err;
   }
 }
 
 module.exports = {
-  WALLET_LIST,
+  ADDRESS_LIST,
   UNSPENT_OUTPUTS,
   initCron,
-  resetWalletList,
+  resetAddressList,
   resetUnspentOutputs,
 };

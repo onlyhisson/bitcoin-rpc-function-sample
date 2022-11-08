@@ -12,7 +12,7 @@ const {
 const { debugLog } = require("../util");
 const {
   getCacheInstance,
-  WALLET_LIST,
+  ADDRESS_LIST,
   UNSPENT_OUTPUTS,
 } = require("../util/cache");
 const { wallet, transaction } = require("../util/rpc");

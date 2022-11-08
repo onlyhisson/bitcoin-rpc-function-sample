@@ -8,11 +8,7 @@
 const NodeCache = require("node-cache");
 let cronCache = null;
 
-const BLOCK_JOB_START = "blockJobStart";
-const BLOCK_JOB_STOP = "blockJobStop";
-const TX_JOB_START = "txJobStart";
-const TX_JOB_STOP = "txJobStop";
-const WALLET_LIST = "walletList";
+const ADDRESS_LIST = "addressList";
 const UNSPENT_OUTPUTS = "unspentOutputs";
 
 function getCacheInstance() {
@@ -26,10 +22,6 @@ function getCacheInstance() {
 
 module.exports = {
   getCacheInstance,
-  WALLET_LIST,
+  ADDRESS_LIST,
   UNSPENT_OUTPUTS,
-  BLOCK_JOB_START,
-  BLOCK_JOB_STOP,
-  TX_JOB_START,
-  TX_JOB_STOP,
 };
