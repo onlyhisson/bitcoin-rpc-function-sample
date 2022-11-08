@@ -48,17 +48,12 @@ const controller = require("../controllers/wallet.controller");
  *     AddressForm:
  *       required:
  *         - label
- *         - type
  *       type: object
  *       properties:
  *         label:
  *           type: string
  *           description: 지갑의 주소에 라벨, 지갑별 중복X
  *           example: walletlabel
- *         type:
- *           type: string
- *           description: 주소 타입, bech32로 고정 예정 (bech32 || p2sh-segwit || legacy)
- *           example: bech32
  *     Balance:
  *       type: object
  *       properties:

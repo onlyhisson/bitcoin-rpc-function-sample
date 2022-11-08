@@ -95,18 +95,13 @@ async function createWalletOne(params) {
 
 async function createAddress(params) {
   let conn = null;
+  const type = BTC_ADDR_TYPE.BECH32; // 고정
 
   try {
-    const { walletId, label, type } = params;
+    const { walletId, label } = params;
 
-    if (isNull(walletId) || isNull(label) || isNull(type)) {
+    if (isNull(walletId) || isNull(label)) {
       throw { message: `invalid parameter` };
-    }
-
-    // 지갑 생성 타입 체크
-    const types = Object.values(BTC_ADDR_TYPE);
-    if (!types.includes(type)) {
-      throw { message: `invalid parameter(address type)` };
     }
 
     // 발급한 주소와 관련된 트랜잭션 확인 스케쥴러 stop
