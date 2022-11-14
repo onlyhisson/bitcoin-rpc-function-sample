@@ -1,5 +1,10 @@
 const Big = require("big.js");
-const { validateCoinAmount, isNull, debugLog } = require("../util");
+const {
+  validateCoinAmount,
+  isNull,
+  debugLog,
+  getFormatUnixTime,
+} = require("../util");
 const { getConnection } = require("../db");
 const { getWalletInfos, findWalletAddress } = require("../db/wallet");
 const { findUnspentTxOutputs } = require("../db/tx_output");
@@ -26,6 +31,7 @@ const MIN_AMOUNT = "0.00000500"; // 출금 가능 최소 개수
 
 async function createWithdrawalCoinReq(params) {
   let conn = null;
+  const updatedAt = getFormatUnixTime();
 
   try {
     const { addressId, toAddress, amount } = params;
@@ -96,7 +102,7 @@ async function createWithdrawalCoinReq(params) {
     const newBalanceFixed = newBalance.toFixed(8);
 
     debugLog("실제 네트워크 잔액", balance, 19);
-    debugLog("해당주소 요청 잔액", freezeAmt, 19);
+    debugLog("요청 대기중 잔액", freezeAmt, 20);
     debugLog("출금요청한 금액", newAmt, 20);
 
     const chkMinus = newBalance.gte(0); // 오른쪽보다 크거나 같은가
@@ -110,6 +116,7 @@ async function createWithdrawalCoinReq(params) {
       toAddress,
       amount: newAmt,
       fee: FEE,
+      updatedAt,
     });
 
     return {
@@ -135,6 +142,7 @@ async function createWithdrawalCoinReq(params) {
 
 async function confirmWithdrawalCoinReq(id) {
   let conn = null;
+  const updatedAt = getFormatUnixTime();
 
   try {
     const passPhase = process.env.PW_PHASE;
@@ -168,6 +176,7 @@ async function confirmWithdrawalCoinReq(id) {
       status: 2,
       txid,
       lastBlockNum,
+      updatedAt,
     };
     await updateWithdrawalCoinReqById(conn, params);
 

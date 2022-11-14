@@ -50,6 +50,7 @@ async function updateUnspentOutputs() {
       mine: { trusted, untrusted_pending, immature },
     } = await getWalletBalance(WALLET_NAME);
 
+    /*
     console.log();
     debugLog("UTXO Unspent Output Count", utxoId.length, 30);
     debugLog("UTXO Unspent Output Sum", `${balance} BTC`, 30);
@@ -58,6 +59,7 @@ async function updateUnspentOutputs() {
       `${new Big(trusted).toFixed(8)} BTC [ ${WALLET_NAME} ] `,
       30
     );
+    */
   } catch (err) {
     console.log("updateUnspentOutputs ERROR : ", err);
   }

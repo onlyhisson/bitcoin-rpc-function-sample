@@ -15,25 +15,34 @@ async function getWalletInfos(conn, params) {
 
 // 지갑 추가
 async function saveWallet(conn, params) {
-  const { name, desc } = params;
+  const { name, desc, createdAt } = params;
   let qry = "INSERT INTO  btc_wallet_dev.wallet_info ";
-  qry += "(`name`, `desc`, `created_at`) VALUES (?, ?, UNIX_TIMESTAMP())";
+  qry += "(`name`, `desc`, `created_at`) VALUES (?, ?, ?)";
 
   return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry, [name, desc]);
+    const [rows] = await conn.execute(qry, [name, desc, createdAt]);
     resolve(rows);
   });
 }
 
 // 지갑 주소 추가
 async function saveWalletAddress(conn, params) {
-  const { walletId, label, address } = params;
+  const { walletId, label, address, startBlockNo, createdAt, updatedAt } =
+    params;
   let qry = "INSERT INTO btc_wallet_dev.wallet_address ";
-  qry += " (wallet_id, label, address, created_at, updated_at) ";
-  qry += " VALUES (?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP())";
+  qry +=
+    " (wallet_id, label, address, start_block_no, created_at, updated_at) ";
+  qry += " VALUES (?, ?, ?, ?, ?, ?)";
 
   return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry, [walletId, label, address]);
+    const [rows] = await conn.execute(qry, [
+      walletId,
+      label,
+      address,
+      startBlockNo,
+      createdAt,
+      updatedAt,
+    ]);
     resolve(rows);
   });
 }

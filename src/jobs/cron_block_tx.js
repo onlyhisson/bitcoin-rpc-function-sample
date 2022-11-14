@@ -4,12 +4,10 @@ const { getConnection } = require("../db");
 const { saveBlockInfo, getDbLastBlockInfo } = require("../db/block");
 const { saveTxidInfos } = require("../db/block_tx");
 
-const { debugLog } = require("../util");
-const { getCacheInstance } = require("../util/cache");
+const { debugLog, getFormatUnixTime } = require("../util");
 const { block } = require("../util/rpc");
 const { getBlockCount, getBlockHash, getBlock } = block;
 
-const cronCache = getCacheInstance();
 const TZ = process.env.TIMEZONE;
 
 const blockTxidJob = new CronJob(" 0 * * * * *", blockTxid, null, true, TZ);
@@ -17,10 +15,9 @@ const blockTxidJob = new CronJob(" 0 * * * * *", blockTxid, null, true, TZ);
 // cron func
 async function blockTxid() {
   let conn = null;
-  let updateBlockNum = 758450;
+  let updateBlockNum = 759345;
 
-  const now = new Date().getTime();
-  const createdAt = Math.round(now / 1000);
+  const createdAt = getFormatUnixTime();
 
   try {
     conn = await getConnection();

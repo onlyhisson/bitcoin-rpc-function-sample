@@ -59,6 +59,11 @@ function getFormatDate(mill) {
   return `${year}-${month}-${dd} ${hour}:${min}:${sec}`;
 }
 
+function getFormatUnixTime(mill) {
+  const date = mill ? new Date(mill) : new Date();
+  return Math.floor(date.getTime() / 1000);
+}
+
 function debugLog(label, content, pad = 20) {
   const newLabel = label.padEnd(pad, " ");
   const fTime = getFormatDate();
@@ -109,6 +114,7 @@ module.exports = {
   wait,
   isNull,
   getFormatDate,
+  getFormatUnixTime,
   decodeBitcoinRawTx: decodeRawTx,
   debugLog,
   validateCoinAmount,

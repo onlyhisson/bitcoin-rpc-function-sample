@@ -7,7 +7,7 @@ const {
   updateWithdrawalCoinReqById,
 } = require("../db/assets");
 
-const { debugLog } = require("../util");
+const { debugLog, getFormatUnixTime } = require("../util");
 
 const TZ = process.env.TIMEZONE;
 
@@ -22,6 +22,8 @@ const withdrawalReqJob = new CronJob(
 
 async function withdrawalReq() {
   let conn = null;
+  const updatedAt = getFormatUnixTime();
+
   try {
     conn = await getConnection();
     const unconfirms = await findWithdrawalCoinReq(conn, {
@@ -61,6 +63,7 @@ async function withdrawalReq() {
         reqId,
         status: 3 /* confirmed */,
         txBlockNum: block_no,
+        updatedAt,
       });
     });
     await Promise.all(pConfirmedReq);

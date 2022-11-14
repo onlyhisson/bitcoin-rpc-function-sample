@@ -1,12 +1,18 @@
 // 출금 요청 정보 저장
 async function saveWithdrawalCoinReq(conn, params) {
-  const { addrId, toAddress, amount, fee } = params;
+  const { addrId, toAddress, amount, fee, updatedAt } = params;
   let qry = " INSERT INTO `btc_wallet_dev`.`coin_withdrawal_req` ";
   qry += " (`addr_id`, `to_addr`, `amount`, `fee`, `created_at`) ";
-  qry += " VALUES (?, ?, ?, ?, UNIX_TIMESTAMP()) ";
+  qry += " VALUES (?, ?, ?, ?, ?) ";
 
   return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry, [addrId, toAddress, amount, fee]);
+    const [rows] = await conn.execute(qry, [
+      addrId,
+      toAddress,
+      amount,
+      fee,
+      updatedAt,
+    ]);
     resolve(rows);
   });
 }
@@ -44,9 +50,9 @@ async function findWithdrawalCoinReq(conn, params) {
 // 출금 tx 가 confirmed 됨, 블록체인에 기록됨
 // status=3, updated_at
 async function updateWithdrawalCoinReqById(conn, params) {
-  let condition = [];
+  let condition = [params.updatedAt];
   let qry = " UPDATE btc_wallet_dev.coin_withdrawal_req ";
-  qry += " SET updated_at = UNIX_TIMESTAMP() ";
+  qry += " SET updated_at = ? ";
   if (params.status) {
     qry += "  , status = ? ";
     condition.push(params.status);
@@ -78,25 +84,25 @@ async function updateWithdrawalCoinReqById(conn, params) {
 }
 
 async function updateWithdrawalCoinReqByTxid(conn, params) {
-  const { status, txid } = params;
+  const { updatedAt, status, txid } = params;
   let qry = " UPDATE btc_wallet_dev.coin_withdrawal_req ";
-  qry += " SET updated_at = UNIX_TIMESTAMP(), status = ?  ";
+  qry += " SET updated_at = ?, status = ?  ";
   qry += " WHERE txid = ? ";
 
   return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry, [status, txid]);
+    const [rows] = await conn.execute(qry, [updatedAt, status, txid]);
     resolve(rows);
   });
 }
 
 async function updateWithdrawalCoinReqByTxids(conn, params) {
-  const { txids, status } = params;
+  const { updatedAt, txids, status } = params;
   let qry = " UPDATE btc_wallet_dev.coin_withdrawal_req ";
-  qry += " SET updated_at = UNIX_TIMESTAMP(), status = ?  ";
+  qry += " SET updated_at = ?, status = ?  ";
   qry += ` WHERE txid IN = ${txids.join(",")} `;
 
   return new Promise(async (resolve, reject) => {
-    const [rows] = await conn.execute(qry, [status]);
+    const [rows] = await conn.execute(qry, [updatedAt, status]);
     resolve(rows);
   });
 }

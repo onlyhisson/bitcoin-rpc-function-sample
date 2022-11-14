@@ -15,7 +15,7 @@ async function saveBlockInfo(conn, params) {
 
 // 디비에 저장된 마지막 블록 정보 조회
 async function getDbLastBlockInfo(conn) {
-  const qry = "SELECT * FROM block_info ORDER BY id DESC LIMIT 1;";
+  const qry = "SELECT * FROM block_info ORDER BY block_no DESC LIMIT 1;";
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry);
     resolve(rows);

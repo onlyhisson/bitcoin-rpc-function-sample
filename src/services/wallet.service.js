@@ -1,4 +1,4 @@
-const { isNull, wait } = require("../util");
+const { isNull, wait, getFormatUnixTime } = require("../util");
 const rpc = require("../util/rpc");
 const {
   getListWallets,
@@ -10,6 +10,7 @@ const {
   getAddressInfo,
   getWalletBalances,
 } = rpc.wallet;
+const { getBlockCount } = rpc.block;
 const { getCacheInstance, ADDRESS_LIST } = require("../util/cache");
 const { BTC_ADDR_TYPE } = require("../static");
 const { getConnection } = require("../db");
@@ -47,6 +48,8 @@ async function get() {
 
 async function createWalletOne(params) {
   let conn = null;
+  const createdAt = getFormatUnixTime();
+
   try {
     const { name, desc, passPhase } = params;
 
@@ -72,7 +75,7 @@ async function createWalletOne(params) {
     console.log("encrypted : ", encrypted);
 
     conn = await getConnection();
-    const { insertId } = await saveWallet(conn, { name, desc });
+    const { insertId } = await saveWallet(conn, { name, desc, createdAt });
 
     return {
       id: insertId,
@@ -96,6 +99,7 @@ async function createWalletOne(params) {
 async function createAddress(params) {
   let conn = null;
   const type = BTC_ADDR_TYPE.BECH32; // 고정
+  const now = getFormatUnixTime();
 
   try {
     const { walletId, label } = params;
@@ -131,10 +135,16 @@ async function createAddress(params) {
     //const labels = await getWalletLabels(walletName);
     //console.log("labels : ", labels);
 
+    // 주소 생성시의 블록 넘버 - 해당 블록 부터 입출금 모니터링하면 됨
+    const lastBlockNum = await getBlockCount();
+
     const { insertId } = await saveWalletAddress(conn, {
       walletId,
       label,
       address,
+      startBlockNo: lastBlockNum,
+      createdAt: now,
+      updatedAt: now,
     });
 
     // 주소 목록에 새로 생성한 지갑 주소 추가
