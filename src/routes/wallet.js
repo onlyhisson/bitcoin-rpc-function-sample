@@ -46,14 +46,11 @@ const controller = require("../controllers/wallet.controller");
  *           description: 지갑 암호화 문장
  *           example: flock bleak bicycle comic palace coral describe enough client symptom arch journey
  *     AddressForm:
- *       required:
- *         - label
  *       type: object
  *       properties:
  *         label:
  *           type: string
- *           description: 지갑의 주소에 라벨, 지갑별 중복X
- *           example: walletlabel
+ *           description: 지갑의 주소에 라벨, 지갑별 중복X, 입력값 없을 시 uuid
  *     Balance:
  *       type: object
  *       properties:

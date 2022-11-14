@@ -62,7 +62,7 @@ router.get("/", controller.get);
  * @swagger
  * /btc/wallets/{walletId}/address:
  *  post:
- *    summary: 지갑 주소 등록
+ *    summary: 지갑 주소 추가
  *    description: 해당 지갑에 주소를 추가하고 새로 생성된 지갑 주소 리턴
  *    tags: [Wallets]
  *    parameters:

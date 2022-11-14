@@ -1,3 +1,4 @@
+const { v4: uuidv4 } = require("uuid");
 const { isNull, wait, getFormatUnixTime } = require("../util");
 const rpc = require("../util/rpc");
 const {
@@ -102,11 +103,13 @@ async function createAddress(params) {
   const now = getFormatUnixTime();
 
   try {
-    const { walletId, label } = params;
+    const { walletId, label: labelParam } = params;
 
-    if (isNull(walletId) || isNull(label)) {
+    if (isNull(walletId)) {
       throw { message: `invalid parameter` };
     }
+
+    const label = isNull(labelParam) ? uuidv4() : labelParam;
 
     // 발급한 주소와 관련된 트랜잭션 확인 스케쥴러 stop
     txInOutJob.stop();
