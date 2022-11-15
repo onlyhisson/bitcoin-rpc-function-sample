@@ -35,7 +35,7 @@ app.use(`/assets`, assets);
 app.use((req, res, next) => {
   res.json({
     success: false,
-    message: "Page not found",
+    message: "not found",
   });
 });
 

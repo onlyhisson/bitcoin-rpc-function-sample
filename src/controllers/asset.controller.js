@@ -19,7 +19,17 @@ async function confirmWithdrawalCoinReq(req, res, next) {
   }
 }
 
+async function getAddressBalance(req, res, next) {
+  try {
+    const data = await service.getAddressBalance(req.params.addrId);
+    successRespFormat(res, { balace: data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   createWithdrawalCoinReq,
   confirmWithdrawalCoinReq,
+  getAddressBalance,
 };

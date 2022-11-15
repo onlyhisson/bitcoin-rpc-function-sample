@@ -7,7 +7,7 @@ const controller = require("../controllers/asset.controller");
  * @swagger
  *  tags:
  *   - name: Assets
- *     description: 출금
+ *     description: 출금, 잔액
  */
 
 /**
@@ -40,7 +40,7 @@ const controller = require("../controllers/asset.controller");
  * /assets/withdraw/coin:
  *   post:
  *     summary: 출금 요청 - 사용자
- *     description: 사용자의 출금 요청 정보 저장
+ *     description: 사용자의 출금 요청 정보 저장, 최소 0.00000500 BTC 이상
  *     tags: [Assets]
  *     requestBody:
  *       description: 출금 요청 정보 등록
@@ -126,5 +126,51 @@ router.post("/withdraw/coin", controller.createWithdrawalCoinReq);
  *               message: error message
  */
 router.patch("/withdraw/coin/:id", controller.confirmWithdrawalCoinReq);
+
+/**
+ * @swagger
+ * /assets/address/{addrId}/balance:
+ *   get:
+ *     summary: 잔액 확인
+ *     description: 현재 출금 가능 금액, 출금 요청 상태에 따른 금액 정보
+ *     tags: [Assets]
+ *     parameters:
+ *       - in: path
+ *         name: addrId
+ *         required: true
+ *         description: 주소 ID
+ *         schema:
+ *           type: integer
+ *         example: 7
+ *     responses:
+ *       200:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     balance:
+ *                       type: object
+ *                       example:
+ *                         unconfirmedAmt: mempool에 등록 상태
+ *                         availableAmt: 출금 가능 잔액 A
+ *                         freezeAmt: 출금 요청 상태 금액 B
+ *                         total: 메인넷 실 잔액 A + B
+ *       500:
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               success: false
+ *               message: error message
+ */
+router.get("/address/:addrId/balance", controller.getAddressBalance);
 
 module.exports = router;

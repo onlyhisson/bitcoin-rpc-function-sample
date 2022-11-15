@@ -75,15 +75,8 @@ async function createWithdrawalCoinReq(params) {
 
     // 향후 RPC 서버에서 DB 조회로 전환 필요할 듯
     // 실제 네트워크 잔액 조회
-    const balanceInfo = await getWalletBalances(walletName);
-    const walletAddresses = balanceInfo.map((el) => el[0]);
-    const addrBalanceInfo = walletAddresses.filter((el) => el[0] === address);
-    if (addrBalanceInfo.length < 1) {
-      throw { message: "지갑 잔액 정보가 없습니다." };
-    }
-
-    // 실제 네트워크 잔액 정보
-    const [rpcAddr, balance, rpcLabel] = addrBalanceInfo[0];
+    const [rpcAddr, balance, rpcLabel] =
+      await getAddressBalanceByWalletAndAddress(walletName, address);
 
     // 요청 중인 건의 비트코인 개수는 일단 출금할 수 있는 금액에서 뺀다.
     // bitcoin-cli 에서 출금을 위해 rawtransaction을 생성할시 잔액이 맞지 않으면
@@ -193,6 +186,54 @@ async function confirmWithdrawalCoinReq(id) {
   }
 }
 
+async function getAddressBalance(addrId) {
+  let conn = null;
+  const updatedAt = getFormatUnixTime();
+
+  try {
+    const passPhase = process.env.PW_PHASE;
+
+    if (isNull(addrId) || isNull(passPhase)) {
+      throw { message: `invalid parameter` };
+    }
+
+    conn = await getConnection();
+
+    const { walletName, address, startBlockNo } =
+      await getWalletInfoByAddressId(conn, addrId);
+
+    const [rpcAddr, rpcBalance, rpcLabel] =
+      await getAddressBalanceByWalletAndAddress(walletName, address);
+
+    const reqs = await findWithdrawalCoinReq(conn, {
+      addrId,
+      status: 1 /* 요청중 */,
+    });
+    const unconfirmedReqs = await findWithdrawalCoinReq(conn, {
+      addrId,
+      status: 2 /* 승인됨, unconfirmed */,
+    });
+    const reqAmt = reqs.reduce(reduceSumBigAmountAndFee, 0);
+    const unconfirmedAmt = unconfirmedReqs.reduce(reduceSumBigAmountAndFee, 0);
+    const availableAmt = new Big(rpcBalance).minus(reqAmt).toFixed(8);
+    return {
+      unconfirmedAmt, // mempool 에 있는 금액(unconfirmed)
+      availableAmt, // 출금 가능액 A
+      freezeAmt: reqAmt, // 출금 요청 상태인 금액 B
+      total: rpcBalance, // 실제 메인넷 잔액 A + B
+    };
+  } catch (err) {
+    console.error("[ERROR] : ", err);
+    throw {
+      message: err.message ? err.message : "error",
+    };
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+}
+
 async function sendCoin(sendInfo) {
   let conn = null;
 
@@ -261,6 +302,40 @@ async function sendCoin(sendInfo) {
   }
 }
 
+async function getWalletInfoByAddressId(conn, addrId) {
+  try {
+    const addresses = await findWalletAddress(conn, { addressId: addrId });
+    if (addresses.length < 1) {
+      throw { message: "주소 정보 없음" };
+    }
+
+    const { wallet_id, address, start_block_no } = addresses[0];
+    const wallets = await getWalletInfos(conn, { walletId: wallet_id });
+    if (wallets.length < 1) {
+      throw { message: "지갑 정보 없음" };
+    }
+    const { name } = wallets[0];
+
+    return { walletName: name, address, startBlockNo: start_block_no };
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function getAddressBalanceByWalletAndAddress(walletName, address) {
+  try {
+    const balanceInfo = await getWalletBalances(walletName);
+    const walletAddresses = balanceInfo.map((el) => el[0]);
+    const addrBalanceInfo = walletAddresses.filter((el) => el[0] === address);
+    if (addrBalanceInfo.length < 1) {
+      throw { message: "지갑 잔액 정보가 없습니다." };
+    }
+    return addrBalanceInfo[0];
+  } catch (err) {
+    throw err;
+  }
+}
+
 function reduceSumBigAmount(prev, cur) {
   const { amount } = cur;
   const x = new Big(amount).toFixed(8);
@@ -273,4 +348,8 @@ function reduceSumBigAmountAndFee(prev, cur) {
   return new Big(x).plus(prev).toFixed(8);
 }
 
-module.exports = { createWithdrawalCoinReq, confirmWithdrawalCoinReq };
+module.exports = {
+  createWithdrawalCoinReq,
+  confirmWithdrawalCoinReq,
+  getAddressBalance,
+};
