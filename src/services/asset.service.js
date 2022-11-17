@@ -27,7 +27,7 @@ const {
 } = require("../util/rpc/transaction");
 
 const FEE = "0.00001551"; // 임시, 출금시 tx의 output 개수에 따라?
-const MIN_AMOUNT = "0.00000500"; // 출금 가능 최소 개수
+const MIN_AMOUNT = "0.00010000"; // 출금 가능 최소 개수
 
 async function createWithdrawalCoinReq(params) {
   let conn = null;

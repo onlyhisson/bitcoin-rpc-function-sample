@@ -109,6 +109,10 @@ function successRespFormat(res, data) {
   res.json({ success: true, data: { ...data } });
 }
 
+function btcToSatoshi(amount) {
+  return new Big(amount).times(100000000).valueOf();
+}
+
 module.exports = {
   executeCommand,
   wait,
@@ -119,4 +123,5 @@ module.exports = {
   debugLog,
   validateCoinAmount,
   successRespFormat,
+  btcToSatoshi,
 };

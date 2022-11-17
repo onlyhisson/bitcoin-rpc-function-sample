@@ -56,9 +56,24 @@ async function getBlock(hash) {
   }
 }
 
+/**
+ * mempool 정보(전체 수수료, 최소 수수료, tx 개수, bytes, 메모리 사용..)
+ */
+async function getMempoolInfo() {
+  try {
+    const params = [...RPC_OPTION, `getmempoolinfo`];
+    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
+
+    return JSON.parse(cmdResult);
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
   getBlockChainInfo,
   getBlockCount,
   getBlockHash,
   getBlock,
+  getMempoolInfo,
 };
