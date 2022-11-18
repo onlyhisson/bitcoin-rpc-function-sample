@@ -30,9 +30,7 @@ async function getMempool() {
     } = mempoolInfo;
 
     const feePerByte = new Big(feeTotal).div(bytes).toFixed(8);
-
-    console.log(mempoolInfo);
-    console.log(feePerByte);
+    const feeTotalFixed = new Big(feeTotal).toFixed(8);
 
     const params = {
       time: createdAt,
@@ -40,7 +38,7 @@ async function getMempool() {
       bytes,
       memoryUsage,
       memoryMax,
-      feeTotal,
+      feeTotal: feeTotalFixed,
       feeMin: btcToSatoshi(feeMin),
       feeRelay: btcToSatoshi(feeRelay),
       satPerByte: btcToSatoshi(feePerByte),
@@ -50,7 +48,8 @@ async function getMempool() {
 
     await saveMempoolInfo(conn, params);
 
-    debugLog("MEMPOOL updated", params, 10);
+    console.log();
+    debugLog("MEMPOOL updated", JSON.stringify(mempoolInfo), 10);
   } catch (err) {
     debugLog("MEMPOOL ERROR ", err, 10);
   } finally {
