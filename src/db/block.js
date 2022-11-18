@@ -22,7 +22,24 @@ async function getDbLastBlockInfo(conn) {
   });
 }
 
+// mempool 상태 저장
+async function saveMempoolInfo(conn, params) {
+  let qry = " INSERT INTO btc_wallet_dev.mempool_info ( ";
+  qry += "  time, tx_cnt, bytes, usage_memory, max_memory, ";
+  qry += "  total_fee, tx_min_fee, tx_relay_fee, fee_per_byte ";
+  qry += " ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ";
+  return new Promise(async (resolve, reject) => {
+    try {
+      await conn.execute(qry, Object.values(params));
+      resolve(true);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 module.exports = {
   saveBlockInfo,
   getDbLastBlockInfo,
+  saveMempoolInfo,
 };

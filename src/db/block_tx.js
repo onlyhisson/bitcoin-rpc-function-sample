@@ -16,7 +16,7 @@ async function completedTxDetailInfo(conn, params) {
 async function completedTxDetailInfos(conn, params) {
   const { time, ids } = params;
   const idJoin = ids.join(",");
-  const qry = ` UPDATE block_tx SET updated_at = ${time} WHERE id IN(${idJoin})`;
+  const qry = ` UPDATE block_tx SET is_bitstoa = 0, updated_at = ${time} WHERE id IN(${idJoin})`;
 
   // Can't create more than max_prepared_stmt_count statements 에러 발생
   //const qry = ` UPDATE block_tx SET updated_at = ? WHERE id IN(${idJoin})`;
@@ -36,7 +36,7 @@ async function completedTxDetailInfos(conn, params) {
 async function updatedOurTx(conn, params) {
   const { ids } = params;
   const idJoin = ids.join(",");
-  const qry = ` UPDATE block_tx SET is_bitstoa = 0 WHERE id IN(${idJoin})`;
+  const qry = ` UPDATE block_tx SET is_bitstoa = 1 WHERE id IN(${idJoin})`;
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -122,7 +122,7 @@ async function findByTxid(conn, params) {
 
   let qry = " SELECT * ";
   qry += " FROM btc_wallet_dev.block_tx";
-  qry += " WHERE is_bitstoa = 0 ";
+  qry += " WHERE is_bitstoa = 1 ";
   if (params.txid) {
     qry += " AND txid = ? ";
     condition.push(params.txid);
