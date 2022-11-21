@@ -2,7 +2,7 @@ const CronJob = require("cron").CronJob;
 const Big = require("big.js");
 
 const { getConnection } = require("../db");
-const { saveMempoolInfo } = require("../db/block");
+const { insMempoolInfo } = require("../db/block");
 
 const { debugLog, getFormatUnixTime, btcToSatoshi } = require("../util");
 const { block } = require("../util/rpc");
@@ -49,7 +49,7 @@ async function getMempool() {
 
     conn = await getConnection();
 
-    await saveMempoolInfo(conn, params);
+    await insMempoolInfo(conn, params);
 
     console.log();
     debugLog("MEMPOOL updated", JSON.stringify(mempoolInfo), 10);

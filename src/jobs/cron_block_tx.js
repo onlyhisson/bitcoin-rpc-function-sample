@@ -1,8 +1,8 @@
 const CronJob = require("cron").CronJob;
 
 const { getConnection } = require("../db");
-const { saveBlockInfo, getDbLastBlockInfo } = require("../db/block");
-const { saveTxidInfos } = require("../db/block_tx");
+const { insBlockInfo, getDbLastBlockInfo } = require("../db/block");
+const { insTxidInfos } = require("../db/block_tx");
 
 const { debugLog, getFormatUnixTime } = require("../util");
 const { block } = require("../util/rpc");
@@ -44,12 +44,12 @@ async function blockTxid() {
     await conn.beginTransaction(); // 트랜잭션 시작
 
     // 블록 정보 저장
-    await saveBlockInfo(conn, { blockNum, nTx, time, createdAt });
+    await insBlockInfo(conn, { blockNum, nTx, time, createdAt });
 
     const txParams = tx.map((el) => ({ txid: el, blockNum, createdAt }));
 
     // 각 블록의 txid 저장
-    await saveTxidInfos(conn, txParams);
+    await insTxidInfos(conn, txParams);
 
     await conn.commit(); // 트랜잭션 커밋
 

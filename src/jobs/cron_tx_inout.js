@@ -7,8 +7,8 @@ const {
   findNotUpdatedTxid,
   updatedOurTx,
 } = require("../db/block_tx");
-const { saveTxInputInfos } = require("../db/tx_input");
-const { saveTxOutputInfos } = require("../db/tx_output");
+const { insTxInputInfos } = require("../db/tx_input");
+const { insTxOutputInfos } = require("../db/tx_output");
 
 const { decodeBitcoinRawTx, debugLog } = require("../util");
 const { getCacheInstance, ADDRESS_LIST } = require("../util/cache");
@@ -138,10 +138,10 @@ async function txDetail() {
     });
 
     if (inAllParams.length > 0) {
-      await saveTxInputInfos(conn, inAllParams);
+      await insTxInputInfos(conn, inAllParams);
     }
     if (outAllParams.length > 0) {
-      await saveTxOutputInfos(conn, outAllParams);
+      await insTxOutputInfos(conn, outAllParams);
     }
 
     const mill3 = new Date().getTime();
