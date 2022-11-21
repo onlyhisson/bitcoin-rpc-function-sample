@@ -30,8 +30,10 @@ async function getMempool() {
     } = mempoolInfo;
 
     const feePerByte = new Big(feeTotal).div(bytes).toFixed(8);
+    const feePerTx = new Big(feeTotal).div(txCnt).toFixed(8);
     const feeTotalFixed = new Big(feeTotal).toFixed(8);
 
+    // 아래 파라미터 순서 중요!!
     const params = {
       time: createdAt,
       txCnt,
@@ -42,6 +44,7 @@ async function getMempool() {
       feeMin: btcToSatoshi(feeMin),
       feeRelay: btcToSatoshi(feeRelay),
       satPerByte: btcToSatoshi(feePerByte),
+      satPerTx: btcToSatoshi(feePerTx),
     };
 
     conn = await getConnection();
