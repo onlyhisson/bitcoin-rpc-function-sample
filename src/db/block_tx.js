@@ -49,7 +49,7 @@ async function updatedOurTx(conn, params) {
 }
 
 // 특정 블록에 해당 하는 txid 저장
-async function saveTxidInfo(conn, params) {
+async function insTxidInfo(conn, params) {
   const { txid, blockNum, createdAt } = params;
   const qry =
     "INSERT INTO block_tx (txid, block_no, created_at) VALUES (?, ?, ?)";
@@ -64,7 +64,7 @@ async function saveTxidInfo(conn, params) {
 }
 
 // 특정 블록에 해당 하는 txid 저장 - bulk insert
-async function saveTxidInfos(conn, params) {
+async function insTxidInfos(conn, params) {
   let paramArr = [];
   params.forEach((el) => {
     const { txid, blockNum, createdAt } = el;
@@ -140,8 +140,8 @@ async function findByTxid(conn, params) {
 module.exports = {
   completedTxDetailInfo,
   completedTxDetailInfos,
-  saveTxidInfo,
-  saveTxidInfos,
+  insTxidInfo,
+  insTxidInfos,
   findNotUpdatedTxid,
   findTxidIdByTxid,
   findByTxid,

@@ -1,14 +1,14 @@
 // 출금 요청 정보 저장
-async function saveWithdrawalCoinReq(conn, params) {
-  const { addrId, toAddress, amount, fee, updatedAt } = params;
+async function insWithdrawalCoinReq(conn, params) {
+  const { addrId, toAddrCnt, amount, fee, updatedAt } = params;
   let qry = " INSERT INTO `btc_wallet_dev`.`coin_withdrawal_req` ";
-  qry += " (`addr_id`, `to_addr`, `amount`, `fee`, `created_at`) ";
+  qry += " (`addr_id`, to_addr_cnt, `amount`, `fee`, `created_at`) ";
   qry += " VALUES (?, ?, ?, ?, ?) ";
 
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, [
       addrId,
-      toAddress,
+      toAddrCnt,
       amount,
       fee,
       updatedAt,
@@ -107,10 +107,31 @@ async function updateWithdrawalCoinReqByTxids(conn, params) {
   });
 }
 
+async function insWithdrawalCoinToAddrs(conn, params) {
+  const { reqId, toAddrObjs } = params;
+  let condtions = [];
+  toAddrObjs.forEach((el, idx) => {
+    const { address, amount } = el;
+    condtions = [...condtions, reqId, idx, address, amount];
+  });
+
+  let qry =
+    "INSERT INTO coin_withdrawal_to_addr (req_id, vout_no, address, amount)";
+  for (let i = 0; i < toAddrObjs.length; i++) {
+    qry += i === 0 ? " VALUES (?, ?, ?, ?) " : ", (?, ?, ?, ?) ";
+  }
+
+  return new Promise(async (resolve, reject) => {
+    const [rows] = await conn.execute(qry, condtions);
+    resolve(rows);
+  });
+}
+
 module.exports = {
-  saveWithdrawalCoinReq,
+  insWithdrawalCoinReq,
   findWithdrawalCoinReq,
   updateWithdrawalCoinReqById,
   updateWithdrawalCoinReqByTxid,
   updateWithdrawalCoinReqByTxids,
+  insWithdrawalCoinToAddrs,
 };

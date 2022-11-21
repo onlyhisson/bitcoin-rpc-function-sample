@@ -1,7 +1,7 @@
 const { debugLog } = require("../util");
 
 // 해당 트랜잭션의 output 정보 저장
-async function saveTxOutputInfo(conn, params) {
+async function insTxOutputInfo(conn, params) {
   const { txId, amount, address, voutNo } = params;
   const qry =
     "INSERT INTO tx_output (txid_id, amount, address, vout_no) VALUES ( ?, ?, ?, ?);";
@@ -10,14 +10,14 @@ async function saveTxOutputInfo(conn, params) {
       await conn.execute(qry, [txId, amount, address, voutNo]);
       resolve(true);
     } catch (err) {
-      debugLog("TX saveTxOutputInfo ERROR - params", params, 20);
+      debugLog("TX insTxOutputInfo ERROR - params", params, 20);
       reject(err);
     }
   });
 }
 
 // 해당 트랜잭션의 output 정보 저장 - bulk insert
-async function saveTxOutputInfos(conn, params) {
+async function insTxOutputInfos(conn, params) {
   let paramArr = [];
   params.forEach((el) => {
     const { txId, amount, address, voutNo } = el;
@@ -34,7 +34,7 @@ async function saveTxOutputInfos(conn, params) {
       await conn.execute(qry, paramArr);
       resolve(true);
     } catch (err) {
-      debugLog("TX saveTxOutputInfo ERROR - params", params, 20);
+      debugLog("TX insTxOutputInfo ERROR - params", params, 20);
       reject(err);
     }
   });
@@ -98,8 +98,8 @@ async function updateUnspentTxOutputs(conn, params) {
 }
 
 module.exports = {
-  saveTxOutputInfo,
-  saveTxOutputInfos,
+  insTxOutputInfo,
+  insTxOutputInfos,
   findTxOutputByTxidId,
   findUnspentTxOutputs,
   updateUnspentTxOutputs,

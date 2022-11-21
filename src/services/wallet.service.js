@@ -18,8 +18,8 @@ const { getConnection } = require("../db");
 const {
   getWalletInfos,
   getWalletAddressList,
-  saveWallet,
-  saveWalletAddress,
+  insWallet,
+  insWalletAddress,
   findWalletAddress,
 } = require("../db/wallet");
 const { txInOutJob } = require("../jobs");
@@ -76,7 +76,7 @@ async function createWalletOne(params) {
     console.log("encrypted : ", encrypted);
 
     conn = await getConnection();
-    const { insertId } = await saveWallet(conn, { name, desc, createdAt });
+    const { insertId } = await insWallet(conn, { name, desc, createdAt });
 
     return {
       id: insertId,
@@ -141,7 +141,7 @@ async function createAddress(params) {
     // 주소 생성시의 블록 넘버 - 해당 블록 부터 입출금 모니터링하면 됨
     const lastBlockNum = await getBlockCount();
 
-    const { insertId } = await saveWalletAddress(conn, {
+    const { insertId } = await insWalletAddress(conn, {
       walletId,
       label,
       address,

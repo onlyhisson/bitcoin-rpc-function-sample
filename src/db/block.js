@@ -1,5 +1,5 @@
 // 블록 정보 저장
-async function saveBlockInfo(conn, params) {
+async function insBlockInfo(conn, params) {
   const { blockNum, nTx, time, createdAt } = params;
   const qry =
     "INSERT INTO block_info (block_no, tx_cnt, time, created_at) VALUES (?, ?, ?, ?)";
@@ -23,7 +23,7 @@ async function getDbLastBlockInfo(conn) {
 }
 
 // mempool 상태 저장
-async function saveMempoolInfo(conn, params) {
+async function insMempoolInfo(conn, params) {
   let qry = " INSERT INTO btc_wallet_dev.mempool_info ( ";
   qry += "  time, tx_cnt, bytes, usage_memory, max_memory, total_fee, ";
   qry += "  tx_min_fee, tx_relay_fee, fee_per_byte, fee_per_tx ";
@@ -39,7 +39,7 @@ async function saveMempoolInfo(conn, params) {
 }
 
 module.exports = {
-  saveBlockInfo,
+  insBlockInfo,
   getDbLastBlockInfo,
-  saveMempoolInfo,
+  insMempoolInfo,
 };

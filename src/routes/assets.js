@@ -14,39 +14,50 @@ const controller = require("../controllers/asset.controller");
  * @swagger
  * components:
  *   schemas:
- *     WithdrawalForm:
- *       required:
- *         - addressId
- *         - toAddress
- *         - amount
+ *     toAddressItem:
+ *       description: 출금 주소 & 금액
+ *       requird:
+ *       - address
+ *       - amount
  *       type: object
  *       properties:
- *         addressId:
- *           type: integer
- *           description: 주소 ID
- *           example: 7
- *         toAddress:
+ *         address:
  *           type: string
- *           description: 받는 주소
- *           example: bc1qkp84yne4jumksnl8rndhvtp8zv0xurkzr4456u
+ *           example: bc1q2nvzu334xz7r30fse82fwwfqr6aetctx6gtsk4
  *         amount:
  *           type: integer
- *           description: 출금액, 소수점 8자리 까지
- *           example: 0.0001
+ *           example: 0.00010000
+ *     WithdrawalForm:
+ *       required:
+ *         - toAddress
+ *       type: object
+ *       properties:
+ *         toAddress:
+ *           type: array
+ *           description: 받는 주소
+ *           items:
+ *             $ref: '#/components/schemas/toAddressItem'
+ *
  */
 
 /**
  * @swagger
- * /assets/withdraw/coin:
+ * /assets/withdraw/{addressId}/coin:
  *   post:
  *     summary: 출금 요청 - 사용자
  *     description: 사용자의 출금 요청 정보 저장, 최소 0.00000500 BTC 이상
  *     tags: [Assets]
+ *     parameters:
+ *       - name: addressId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         example: 7
  *     requestBody:
- *       description: 출금 요청 정보 등록
- *       required: true
+ *       description: 출금 주소 & 금액 1개 이상
  *       content:
- *         application/x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/WithdrawalForm'
  *     responses:
@@ -83,7 +94,7 @@ const controller = require("../controllers/asset.controller");
  *               success: false
  *               message: error message
  */
-router.post("/withdraw/coin", controller.createWithdrawalCoinReq);
+router.post("/withdraw/:addressId/coin", controller.createWithdrawalCoinReq);
 
 /**
  * @swagger

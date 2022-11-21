@@ -41,9 +41,9 @@ app.use((req, res, next) => {
 
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  debugLog("ERROR", err.message, 20);
   if (err && err.stack) {
-    debugLog("ERROR", err.stack, 20);
+    debugLog("ERROR APP", err.message, 10);
+    debugLog("ERROR APP", err.stack, 10);
   }
   res.status(statusCode).json({
     success: false,

@@ -10,8 +10,9 @@ const { getWalletInfos, findWalletAddress } = require("../db/wallet");
 const { findUnspentTxOutputs } = require("../db/tx_output");
 const {
   findWithdrawalCoinReq,
-  saveWithdrawalCoinReq,
+  insWithdrawalCoinReq,
   updateWithdrawalCoinReqById,
+  insWithdrawalCoinToAddrs,
 } = require("../db/assets");
 const { validateAddress } = require("../util/rpc/util");
 const { getBlockCount } = require("../util/rpc/block");
@@ -27,101 +28,104 @@ const {
 } = require("../util/rpc/transaction");
 
 const FEE = "0.00001551"; // 임시, 출금시 tx의 output 개수에 따라?
-const MIN_AMOUNT = "0.00010000"; // 출금 가능 최소 개수
+const MIN_AMOUNT = "0.00001000"; // 출금 가능 최소 개수
 
 async function createWithdrawalCoinReq(params) {
   let conn = null;
   const updatedAt = getFormatUnixTime();
 
   try {
-    const { addressId, toAddress, amount } = params;
+    const { addressId, toAddress } = params;
 
-    // 출금 숫자 유효성 확인
-    const newAmt = validateCoinAmount(amount, {
-      decimalCnt: 8,
-      minAmt: MIN_AMOUNT,
-    });
-
-    const { isvalid: isBtcAddr } = await validateAddress(toAddress);
-    if (!isBtcAddr) {
-      throw { message: "유효한 BTC 지갑 주소가 아닙니다." };
-    }
-
-    if (
-      isNull(addressId) ||
-      isNull(amount) ||
-      isNull(toAddress) ||
-      isNull(newAmt)
-    ) {
+    // 유효성 : null 확인
+    if (isNull(addressId) || isNull(toAddress) || !Array.isArray(toAddress)) {
       throw { message: `invalid parameter` };
     }
 
+    // 유효성 : 출금 숫자 형식(지리수, 최소금액), 유효하지 않으면 throw error
+    // 최소 출금액은 주소 단위로 적용됨
+    const toAddrObjs = toAddress.map((el) => {
+      const newAmt = validateCoinAmount(el.amount, {
+        decimalCnt: 8,
+        minAmt: MIN_AMOUNT,
+      });
+      return {
+        address: el.address,
+        amount: newAmt,
+      };
+    });
+
+    // 유효성 : BTC 지갑 주소
+    const pIsBtcAddr = toAddrObjs.map(async (el) => {
+      return await validateAddress(el.address);
+    });
+    const isBtcAddrs = await Promise.all(pIsBtcAddr);
+    const invalidBtcAddr = isBtcAddrs.filter((el) => !el.isvalid);
+    if (invalidBtcAddr.length > 0) {
+      throw { message: "유효한 BTC 지갑 주소가 아닙니다." };
+    }
+
+    // ##############################################
     // 파라미터 유효성 검사 끝
+    // ##############################################
 
     conn = await getConnection();
 
-    // 주소 ID 로 주소 정보 조회
-    const addressInfos = await findWalletAddress(conn, { addressId });
-    if (addressInfos.length < 1) {
-      throw { message: "지갑 주소 정보가 없습니다." };
-    }
-    const { id, wallet_id: walletId, label, address } = addressInfos[0];
+    const { walletName, address, label } = await getWalletInfoByAddressId(
+      conn,
+      addressId
+    );
 
-    const walletInfos = await getWalletInfos(conn, { walletId });
-    if (walletInfos.length < 1) {
-      throw { message: "지갑 정보가 없습니다." };
-    }
-    const { name: walletName } = walletInfos[0];
+    const {
+      unconfirmedAmt, // 승인 O, tx가 mempool 에 있음
+      freezeAmt, // 출금 요청 상태의 잔액
+      availableAmt, // 출금 가능 금액, total - freezeAmt
+      total, // availableAmt + freezeAmt, 실제 네트워크 잔액
+    } = await getAddressBalanceInfos(conn, addressId);
 
-    // 향후 RPC 서버에서 DB 조회로 전환 필요할 듯
-    // 실제 네트워크 잔액 조회
-    const [rpcAddr, balance, rpcLabel] =
-      await getAddressBalanceByWalletAndAddress(walletName, address);
-
-    // 요청 중인 건의 비트코인 개수는 일단 출금할 수 있는 금액에서 뺀다.
-    // bitcoin-cli 에서 출금을 위해 rawtransaction을 생성할시 잔액이 맞지 않으면
-    // 트랜잭션 생성 후 유효성을 확인할 수 있기 때문에 최종적으로 사고가 나지는 않는다
-    // 요청 상태인 row 조회, unconfirmed 상태에서 rpc 서버 잔액 조회시 차감되어 있음
-    const reqs = await findWithdrawalCoinReq(conn, {
-      addrId: addressId,
-      status: 1 /* 요청중 */,
-    });
-    const freezeAmt = reqs.reduce(reduceSumBigAmountAndFee, 0);
-
-    const newBalance = new Big(balance)
+    const totalReqAmt = toAddrObjs.reduce(reduceSumBigAmount, 0);
+    const newBalance = new Big(availableAmt)
       .minus(FEE) // 수수료
-      .minus(newAmt) // 출금액
+      .minus(totalReqAmt) // 출금액
       .minus(freezeAmt); // 출금 요청 상태 금액
     const newBalanceFixed = newBalance.toFixed(8);
 
-    debugLog("실제 네트워크 잔액", balance, 19);
+    debugLog("실제 네트워크 잔액", total, 19);
     debugLog("요청 대기중 잔액", freezeAmt, 20);
-    debugLog("출금요청한 금액", newAmt, 20);
+    debugLog("출금요청한 금액", totalReqAmt, 20);
 
     const chkMinus = newBalance.gte(0); // 오른쪽보다 크거나 같은가
     if (!chkMinus) {
       throw { message: `잔액이 부족합니다.(${newBalanceFixed})` };
     }
 
+    await conn.beginTransaction(); // 트랜잭션 시작
+
     // 요청 정보 저장
-    await saveWithdrawalCoinReq(conn, {
+    const insReqRes = await insWithdrawalCoinReq(conn, {
+      label,
       addrId: addressId,
-      toAddress,
-      amount: newAmt,
+      toAddrCnt: toAddrObjs.length,
+      amount: totalReqAmt,
       fee: FEE,
       updatedAt,
     });
+    const { insertId } = insReqRes;
+
+    await insWithdrawalCoinToAddrs(conn, { reqId: insertId, toAddrObjs });
+
+    await conn.commit(); // 트랜잭션 커밋
 
     return {
-      label,
       from: address,
       to: toAddress,
-      amount: newAmt,
+      amount: totalReqAmt,
       freezeAmt,
       fee: FEE,
       willBalance: newBalanceFixed,
     };
   } catch (err) {
+    await conn.rollback(); // 트랜잭션 롤백
     console.error("[ERROR] : ", err);
     throw {
       message: err.message ? err.message : "error",
@@ -186,9 +190,9 @@ async function confirmWithdrawalCoinReq(id) {
   }
 }
 
+// 지갑 잔액 by 지갑 아이디
 async function getAddressBalance(addrId) {
   let conn = null;
-  const updatedAt = getFormatUnixTime();
 
   try {
     const passPhase = process.env.PW_PHASE;
@@ -199,28 +203,14 @@ async function getAddressBalance(addrId) {
 
     conn = await getConnection();
 
-    const { walletName, address, startBlockNo } =
-      await getWalletInfoByAddressId(conn, addrId);
+    const { unconfirmedAmt, availableAmt, freezeAmt, total } =
+      await getAddressBalanceInfos(conn, addrId);
 
-    const [rpcAddr, rpcBalance, rpcLabel] =
-      await getAddressBalanceByWalletAndAddress(walletName, address);
-
-    const reqs = await findWithdrawalCoinReq(conn, {
-      addrId,
-      status: 1 /* 요청중 */,
-    });
-    const unconfirmedReqs = await findWithdrawalCoinReq(conn, {
-      addrId,
-      status: 2 /* 승인됨, unconfirmed */,
-    });
-    const reqAmt = reqs.reduce(reduceSumBigAmountAndFee, 0);
-    const unconfirmedAmt = unconfirmedReqs.reduce(reduceSumBigAmountAndFee, 0);
-    const availableAmt = new Big(rpcBalance).minus(reqAmt).toFixed(8);
     return {
       unconfirmedAmt, // mempool 에 있는 금액(unconfirmed)
       availableAmt, // 출금 가능액 A
-      freezeAmt: reqAmt, // 출금 요청 상태인 금액 B
-      total: rpcBalance, // 실제 메인넷 잔액 A + B
+      freezeAmt, // 출금 요청 상태인 금액 B
+      total, // 실제 메인넷 잔액 A + B
     };
   } catch (err) {
     console.error("[ERROR] : ", err);
@@ -233,6 +223,10 @@ async function getAddressBalance(addrId) {
     }
   }
 }
+
+// ################################################
+// FUNCTION
+// ################################################
 
 async function sendCoin(sendInfo) {
   let conn = null;
@@ -309,14 +303,14 @@ async function getWalletInfoByAddressId(conn, addrId) {
       throw { message: "주소 정보 없음" };
     }
 
-    const { wallet_id, address, start_block_no } = addresses[0];
+    const { wallet_id, address, start_block_no, label } = addresses[0];
     const wallets = await getWalletInfos(conn, { walletId: wallet_id });
     if (wallets.length < 1) {
       throw { message: "지갑 정보 없음" };
     }
     const { name } = wallets[0];
 
-    return { walletName: name, address, startBlockNo: start_block_no };
+    return { walletName: name, address, startBlockNo: start_block_no, label };
   } catch (err) {
     throw err;
   }
@@ -336,6 +330,37 @@ async function getAddressBalanceByWalletAndAddress(walletName, address) {
   }
 }
 
+// here
+async function getAddressBalanceInfos(conn, addrId) {
+  try {
+    const { walletName, address, startBlockNo } =
+      await getWalletInfoByAddressId(conn, addrId);
+
+    const [rpcAddr, rpcBalance, rpcLabel] =
+      await getAddressBalanceByWalletAndAddress(walletName, address);
+
+    const reqs = await findWithdrawalCoinReq(conn, {
+      addrId,
+      status: 1 /* 요청중 */,
+    });
+    const unconfirmedReqs = await findWithdrawalCoinReq(conn, {
+      addrId,
+      status: 2 /* 승인됨, unconfirmed */,
+    });
+    const reqAmt = reqs.reduce(reduceSumBigAmountAndFee, 0);
+    const unconfirmedAmt = unconfirmedReqs.reduce(reduceSumBigAmountAndFee, 0);
+    const availableAmt = new Big(rpcBalance).minus(reqAmt).toFixed(8);
+    return {
+      unconfirmedAmt, // mempool 에 있는 금액(unconfirmed)
+      availableAmt, // 출금 가능액 A
+      freezeAmt: reqAmt, // 출금 요청 상태인 금액 B
+      total: rpcBalance, // 실제 메인넷 잔액 A + B
+    };
+  } catch (err) {
+    throw err;
+  }
+}
+
 function reduceSumBigAmount(prev, cur) {
   const { amount } = cur;
   const x = new Big(amount).toFixed(8);
@@ -346,6 +371,11 @@ function reduceSumBigAmountAndFee(prev, cur) {
   const { amount, fee } = cur;
   const x = new Big(amount).plus(fee).toFixed(8);
   return new Big(x).plus(prev).toFixed(8);
+}
+
+async function getTxFeefromRawTxSize(conn, params) {
+  // raw tx
+  // signed row tx
 }
 
 module.exports = {

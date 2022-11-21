@@ -14,7 +14,7 @@ async function getWalletInfos(conn, params) {
 }
 
 // 지갑 추가
-async function saveWallet(conn, params) {
+async function insWallet(conn, params) {
   const { name, desc, createdAt } = params;
   let qry = "INSERT INTO  btc_wallet_dev.wallet_info ";
   qry += "(`name`, `desc`, `created_at`) VALUES (?, ?, ?)";
@@ -26,7 +26,7 @@ async function saveWallet(conn, params) {
 }
 
 // 지갑 주소 추가
-async function saveWalletAddress(conn, params) {
+async function insWalletAddress(conn, params) {
   const { walletId, label, address, startBlockNo, createdAt, updatedAt } =
     params;
   let qry = "INSERT INTO btc_wallet_dev.wallet_address ";
@@ -98,7 +98,7 @@ module.exports = {
   getWalletInfos,
   getWalletAddressList,
   getAddressList,
-  saveWallet,
-  saveWalletAddress,
+  insWallet,
+  insWalletAddress,
   findWalletAddress,
 };

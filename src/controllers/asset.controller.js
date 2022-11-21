@@ -3,7 +3,10 @@ const service = require("../services/asset.service");
 
 async function createWithdrawalCoinReq(req, res, next) {
   try {
-    const data = await service.createWithdrawalCoinReq(req.body);
+    const data = await service.createWithdrawalCoinReq({
+      ...req.params,
+      ...req.body,
+    });
     successRespFormat(res, { reqInfo: data });
   } catch (err) {
     next(err);

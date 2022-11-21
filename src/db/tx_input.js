@@ -1,7 +1,7 @@
 const { debugLog } = require("../util");
 
 // 해당 트랜잭션의 input 정보 저장
-async function saveTxInputInfo(conn, params) {
+async function insTxInputInfo(conn, params) {
   const { txId, prevTxid, voutNo } = params;
   const qry =
     "INSERT INTO tx_input (txid_id, prev_txid, vout_no) VALUES ( ?, ?, ? );";
@@ -10,14 +10,14 @@ async function saveTxInputInfo(conn, params) {
       await conn.execute(qry, [txId, prevTxid, Number(voutNo)]);
       resolve(true);
     } catch (err) {
-      debugLog("TX saveTxInputInfo ERROR - params", params, 20);
+      debugLog("TX insTxInputInfo ERROR - params", params, 20);
       reject(err);
     }
   });
 }
 
 // 해당 트랜잭션의 input 정보 저장 - bulk insert
-async function saveTxInputInfos(conn, params) {
+async function insTxInputInfos(conn, params) {
   let paramArr = [];
   params.forEach((el) => {
     const { txId, prevTxid, voutNo } = el;
@@ -33,7 +33,7 @@ async function saveTxInputInfos(conn, params) {
       await conn.execute(qry, paramArr);
       resolve(true);
     } catch (err) {
-      debugLog("TX saveTxInputInfo ERROR - params", params, 20);
+      debugLog("TX insTxInputInfo ERROR - params", params, 20);
       reject(err);
     }
   });
@@ -54,7 +54,7 @@ async function findTxInputByTxidId(conn, params) {
 }
 
 module.exports = {
-  saveTxInputInfo,
-  saveTxInputInfos,
+  insTxInputInfo,
+  insTxInputInfos,
   findTxInputByTxidId,
 };
