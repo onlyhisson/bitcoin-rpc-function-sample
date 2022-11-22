@@ -1,6 +1,18 @@
 const { successRespFormat } = require("../util");
 const service = require("../services/asset.service");
 
+async function getWithdrawalCoinFee(req, res, next) {
+  try {
+    const data = await service.getWithdrawalCoinFee({
+      ...req.params,
+      ...req.query,
+    });
+    successRespFormat(res, { feeInfo: data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function createWithdrawalCoinReq(req, res, next) {
   try {
     const data = await service.createWithdrawalCoinReq({
@@ -24,7 +36,7 @@ async function confirmWithdrawalCoinReq(req, res, next) {
 
 async function getAddressBalance(req, res, next) {
   try {
-    const data = await service.getAddressBalance(req.params.addrId);
+    const data = await service.getAddressBalance(req.params.addressId);
     successRespFormat(res, { balace: data });
   } catch (err) {
     next(err);
@@ -35,4 +47,5 @@ module.exports = {
   createWithdrawalCoinReq,
   confirmWithdrawalCoinReq,
   getAddressBalance,
+  getWithdrawalCoinFee,
 };

@@ -38,8 +38,22 @@ async function insMempoolInfo(conn, params) {
   });
 }
 
+async function getLastMempoolInfo(conn) {
+  const qry =
+    "SELECT * FROM btc_wallet_dev.mempool_info ORDER BY time DESC LIMIT 1";
+  return new Promise(async (resolve, reject) => {
+    try {
+      const [rows] = await conn.execute(qry);
+      resolve(rows);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 module.exports = {
   insBlockInfo,
   getDbLastBlockInfo,
   insMempoolInfo,
+  getLastMempoolInfo,
 };

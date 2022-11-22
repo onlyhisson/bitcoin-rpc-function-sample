@@ -76,11 +76,11 @@ function debugLog(label, content, pad = 20) {
   }
 }
 
-function validateCoinAmount(value, option) {
+function validateCoinAmount({ amount: value, address }, option) {
   try {
     const expandOption = {
       decimalCnt: 8,
-      minAmt: "0.00000500",
+      minAmt: "0.00001000",
       ...option,
     };
 
@@ -95,7 +95,35 @@ function validateCoinAmount(value, option) {
 
     const minChk = new Big(value).gte(minAmt);
     if (!minChk) {
-      throw { message: `최소 출금액은 ${minAmt} BTC 입니다.` };
+      throw { message: `최소 출금액은 ${minAmt} BTC 입니다.(${address})` };
+    }
+
+    return amount;
+  } catch (err) {
+    throw err;
+  }
+}
+
+function validateFeeAmount(value, option) {
+  try {
+    const expandOption = {
+      decimalCnt: 8,
+      minAmt: "0.00001000",
+      ...option,
+    };
+
+    const { decimalCnt, minAmt } = expandOption;
+
+    // 자리수 맞춤, 잘못된 형식의 amount 입력 방지
+    const amount = new Big(value).toFixed(decimalCnt);
+    const diff = new Big(value).minus(amount).toString();
+    if (diff !== "0") {
+      throw { message: "잘못된 형식의 수수료" };
+    }
+
+    const minChk = new Big(value).gte(minAmt);
+    if (!minChk) {
+      throw { message: `최소 수수료는 ${minAmt} BTC 입니다.` };
     }
 
     return amount;
@@ -113,6 +141,10 @@ function btcToSatoshi(amount) {
   return new Big(amount).times(100000000).valueOf();
 }
 
+function satoshiToBtc(amount) {
+  return new Big(amount).div(100000000).toFixed(8);
+}
+
 module.exports = {
   executeCommand,
   wait,
@@ -122,6 +154,8 @@ module.exports = {
   decodeBitcoinRawTx: decodeRawTx,
   debugLog,
   validateCoinAmount,
+  validateFeeAmount,
   successRespFormat,
   btcToSatoshi,
+  satoshiToBtc,
 };

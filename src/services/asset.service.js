@@ -1,9 +1,11 @@
 const Big = require("big.js");
 const {
   validateCoinAmount,
+  validateFeeAmount,
   isNull,
   debugLog,
   getFormatUnixTime,
+  satoshiToBtc,
 } = require("../util");
 const { getConnection } = require("../db");
 const { getWalletInfos, findWalletAddress } = require("../db/wallet");
@@ -14,6 +16,7 @@ const {
   updateWithdrawalCoinReqById,
   insWithdrawalCoinToAddrs,
 } = require("../db/assets");
+const { getLastMempoolInfo } = require("../db/block");
 const { validateAddress } = require("../util/rpc/util");
 const { getBlockCount } = require("../util/rpc/block");
 const {
@@ -27,27 +30,86 @@ const {
   sendRawTransaction,
 } = require("../util/rpc/transaction");
 
-const FEE = "0.00001551"; // 임시, 출금시 tx의 output 개수에 따라?
-const MIN_AMOUNT = "0.00001000"; // 출금 가능 최소 개수
+const MIN_OUT_AMT = "0.00001000"; // 최소 출금액
+
+async function getWithdrawalCoinFee(params) {
+  let conn = null;
+
+  try {
+    const { addressId, toAddresses } = params;
+
+    // 유효성 : null 확인
+    if (
+      isNull(addressId) ||
+      isNull(toAddresses) ||
+      !Array.isArray(toAddresses)
+    ) {
+      throw { message: `invalid parameter` };
+    }
+
+    conn = await getConnection();
+
+    const { address } = await getWalletInfoByAddressId(conn, addressId);
+
+    const utxos = await findUnspentTxOutputs(conn, { address });
+
+    // toAddresses.length + 1
+    // 출금 주소로 남은 잔액 보내야 하기 때문에(toCnt = 입금 주소 개수 + 출금 주소)
+    // 전액 출금 처리시 + 1 할 필요 없으나 현재는 무시한다.
+    const fee = await getTxFee(conn, {
+      fromCnt: utxos.length,
+      toCnt: toAddresses.length + 1,
+    });
+
+    return { ...fee };
+  } catch (err) {
+    console.error("[ERROR] : ", err);
+    throw {
+      message: err.message ? err.message : "error",
+    };
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+}
 
 async function createWithdrawalCoinReq(params) {
   let conn = null;
   const updatedAt = getFormatUnixTime();
 
   try {
-    const { addressId, toAddress } = params;
+    const { addressId, fee, toAddresses } = params;
 
     // 유효성 : null 확인
-    if (isNull(addressId) || isNull(toAddress) || !Array.isArray(toAddress)) {
+    if (
+      isNull(addressId) ||
+      isNull(fee) ||
+      isNull(toAddresses) ||
+      !Array.isArray(toAddresses)
+    ) {
       throw { message: `invalid parameter` };
     }
 
+    conn = await getConnection();
+
+    const mempoolInfo = await getLastMempoolInfo(conn);
+    if (mempoolInfo.length < 1) {
+      throw { message: "mempool info is not exist" };
+    }
+
+    // 유효성 : 최소 수수료
+    const { tx_min_fee } = mempoolInfo[0];
+    const txMinFee = satoshiToBtc(tx_min_fee);
+    const newFee = validateFeeAmount(fee, {
+      minAmt: txMinFee,
+    });
+
     // 유효성 : 출금 숫자 형식(지리수, 최소금액), 유효하지 않으면 throw error
     // 최소 출금액은 주소 단위로 적용됨
-    const toAddrObjs = toAddress.map((el) => {
-      const newAmt = validateCoinAmount(el.amount, {
-        decimalCnt: 8,
-        minAmt: MIN_AMOUNT,
+    const toAddrObjs = toAddresses.map((el) => {
+      const newAmt = validateCoinAmount(el, {
+        minAmt: MIN_OUT_AMT,
       });
       return {
         address: el.address,
@@ -69,8 +131,6 @@ async function createWithdrawalCoinReq(params) {
     // 파라미터 유효성 검사 끝
     // ##############################################
 
-    conn = await getConnection();
-
     const { walletName, address, label } = await getWalletInfoByAddressId(
       conn,
       addressId
@@ -85,7 +145,7 @@ async function createWithdrawalCoinReq(params) {
 
     const totalReqAmt = toAddrObjs.reduce(reduceSumBigAmount, 0);
     const newBalance = new Big(availableAmt)
-      .minus(FEE) // 수수료
+      .minus(newFee) // 수수료
       .minus(totalReqAmt) // 출금액
       .minus(freezeAmt); // 출금 요청 상태 금액
     const newBalanceFixed = newBalance.toFixed(8);
@@ -107,7 +167,7 @@ async function createWithdrawalCoinReq(params) {
       addrId: addressId,
       toAddrCnt: toAddrObjs.length,
       amount: totalReqAmt,
-      fee: FEE,
+      fee: newFee,
       updatedAt,
     });
     const { insertId } = insReqRes;
@@ -118,15 +178,15 @@ async function createWithdrawalCoinReq(params) {
 
     return {
       from: address,
-      to: toAddress,
+      to: toAddresses,
       amount: totalReqAmt,
       freezeAmt,
-      fee: FEE,
+      fee: newFee,
       willBalance: newBalanceFixed,
     };
   } catch (err) {
-    await conn.rollback(); // 트랜잭션 롤백
     console.error("[ERROR] : ", err);
+    await conn.rollback(); // 트랜잭션 롤백
     throw {
       message: err.message ? err.message : "error",
     };
@@ -224,9 +284,9 @@ async function getAddressBalance(addrId) {
   }
 }
 
-// ################################################
+// #########################################################################
 // FUNCTION
-// ################################################
+// #########################################################################
 
 async function sendCoin(sendInfo) {
   let conn = null;
@@ -373,13 +433,42 @@ function reduceSumBigAmountAndFee(prev, cur) {
   return new Big(x).plus(prev).toFixed(8);
 }
 
-async function getTxFeefromRawTxSize(conn, params) {
-  // raw tx
-  // signed row tx
+// fromCnt: (A) utxo 개수
+// toCnt:  (B) 출금 주소 개수 - 자신 주소 포함(최소 2개 이상)
+async function getTxFee(conn, { fromCnt, toCnt }) {
+  try {
+    const mempoolLast = await getLastMempoolInfo(conn);
+    if (mempoolLast.length < 1) {
+      throw { message: "mempool info is not exist" };
+    }
+
+    const {
+      tx_min_fee: minFeePerTx, // 트랜잭션 최소 수수료
+      fee_per_byte: feePerByte, // 바이트당 수수료
+      fee_per_tx: averageFeePerTx, // 트랜잭션당 수수료
+    } = mempoolLast[0];
+
+    // (A) * 146 + (B) * 33 + 10 = P2SH/P2PKH 트랜잭션 사이즈
+    // 계산식 정확X, 1자리수에서 2배 이내로 차이
+    const txBytes = fromCnt * 146 + toCnt * 33 + 10; // 트랜잭션 사이즈
+    const feeTxBytes = satoshiToBtc(txBytes * feePerByte); // tx size에 따른 수수료
+
+    console.log(`${fromCnt} * 146 + ${toCnt} * 33 + 10 = ${txBytes}`);
+    console.log(`${txBytes} * ${feePerByte} = ${feeTxBytes}BTC`);
+
+    return {
+      minFeePerTx: satoshiToBtc(minFeePerTx),
+      averageFeeTxSize: feeTxBytes, // 요청건 tx 사이즈 대비 수수료
+      averageFeePerTx: satoshiToBtc(averageFeePerTx),
+    };
+  } catch (err) {
+    throw err;
+  }
 }
 
 module.exports = {
   createWithdrawalCoinReq,
   confirmWithdrawalCoinReq,
   getAddressBalance,
+  getWithdrawalCoinFee,
 };
