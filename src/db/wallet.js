@@ -27,12 +27,10 @@ async function insWallet(conn, params) {
 
 // 지갑 주소 추가
 async function insWalletAddress(conn, params) {
-  const { walletId, label, address, startBlockNo, createdAt, updatedAt } =
-    params;
+  const { walletId, label, address, startBlockNo, createdAt } = params;
   let qry = "INSERT INTO btc_wallet_dev.wallet_address ";
-  qry +=
-    " (wallet_id, label, address, start_block_no, created_at, updated_at) ";
-  qry += " VALUES (?, ?, ?, ?, ?, ?)";
+  qry += " (wallet_id, label, address, start_block_no, created_at) ";
+  qry += " VALUES (?, ?, ?, ?, ?)";
 
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, [
@@ -41,7 +39,6 @@ async function insWalletAddress(conn, params) {
       address,
       startBlockNo,
       createdAt,
-      updatedAt,
     ]);
     resolve(rows);
   });

@@ -100,7 +100,7 @@ async function createWalletOne(params) {
 async function createAddress(params) {
   let conn = null;
   const type = BTC_ADDR_TYPE.BECH32; // 고정
-  const now = getFormatUnixTime();
+  const createdAt = getFormatUnixTime();
 
   try {
     const { walletId, label: labelParam } = params;
@@ -146,8 +146,7 @@ async function createAddress(params) {
       label,
       address,
       startBlockNo: lastBlockNum,
-      createdAt: now,
-      updatedAt: now,
+      createdAt,
     });
 
     // 주소 목록에 새로 생성한 지갑 주소 추가
