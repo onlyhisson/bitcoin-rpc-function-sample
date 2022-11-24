@@ -1,17 +1,25 @@
 // 출금 요청 정보 저장
 async function insWithdrawalCoinReq(conn, params) {
-  const { addrId, toAddrCnt, amount, fee, updatedAt } = params;
-  let qry = " INSERT INTO `btc_wallet_dev`.`coin_withdrawal_req` ";
-  qry += " (`addr_id`, to_addr_cnt, `amount`, `fee`, `created_at`) ";
-  qry += " VALUES (?, ?, ?, ?, ?) ";
+  let qry = " INSERT INTO `btc_wallet_dev`.`coin_withdrawal_req` ( ";
+  qry += "   `addr_id`, `fee`, `status`, `created_at`, `txid` ";
+  qry += "   ,`size`, `vsize`,`input_cnt`, `output_cnt`";
+  qry += "   ,`input_total_amount`, `output_total_amount`, `start_block_no` ";
+  qry += " ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ";
 
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, [
-      addrId,
-      toAddrCnt,
-      amount,
-      fee,
-      updatedAt,
+      params.addrId,
+      params.fee,
+      params.status,
+      params.createdAt,
+      params.txid,
+      params.size,
+      params.vsize,
+      params.inputCnt,
+      params.outputCnt,
+      params.inputTotalAmt,
+      params.ouputTotalAmt,
+      params.startBlockNo,
     ]);
     resolve(rows);
   });
@@ -61,6 +69,10 @@ async function updateWithdrawalCoinReqById(conn, params) {
     qry += "  , txid = ? ";
     condition.push(params.txid);
   }
+  if (params.size) {
+    qry += "  , size = ? ";
+    condition.push(params.size);
+  }
   // 출금 처리 승인 시의 마지막 블록넘버
   if (params.lastBlockNum) {
     qry += "  , start_block_no = ? ";
@@ -71,7 +83,6 @@ async function updateWithdrawalCoinReqById(conn, params) {
     qry += "  , end_block_no = ? ";
     condition.push(params.txBlockNum);
   }
-
   if (params.reqId) {
     qry += " WHERE id = ? ";
     condition.push(params.reqId);
@@ -108,21 +119,31 @@ async function updateWithdrawalCoinReqByTxids(conn, params) {
 }
 
 async function insWithdrawalCoinToAddrs(conn, params) {
-  const { reqId, toAddrObjs } = params;
+  const { reqId, txOutputs } = params;
   let condtions = [];
-  toAddrObjs.forEach((el, idx) => {
-    const { address, amount } = el;
-    condtions = [...condtions, reqId, idx, address, amount];
+  txOutputs.forEach((el) => {
+    const { address, amount, voutNo } = el;
+    condtions = [...condtions, reqId, voutNo, address, amount];
   });
 
   let qry =
     "INSERT INTO coin_withdrawal_to_addr (req_id, vout_no, address, amount)";
-  for (let i = 0; i < toAddrObjs.length; i++) {
+  for (let i = 0; i < txOutputs.length; i++) {
     qry += i === 0 ? " VALUES (?, ?, ?, ?) " : ", (?, ?, ?, ?) ";
   }
 
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, condtions);
+    resolve(rows);
+  });
+}
+
+async function findWithdrawalCoinToInfosByReqId(conn, params) {
+  const { reqId } = params;
+  const qry =
+    "SELECT * FROM btc_wallet_dev.coin_withdrawal_to_addr WHERE req_id = ? ";
+  return new Promise(async (resolve, reject) => {
+    const [rows] = await conn.execute(qry, [reqId]);
     resolve(rows);
   });
 }
@@ -134,4 +155,5 @@ module.exports = {
   updateWithdrawalCoinReqByTxid,
   updateWithdrawalCoinReqByTxids,
   insWithdrawalCoinToAddrs,
+  findWithdrawalCoinToInfosByReqId,
 };

@@ -29,18 +29,15 @@ async function getDecodeRawTransaction(rawData) {
 
 /**
  * raw transaction 생성
+ * @param utxos, // [{txid, vout_no}, ...]
+ * @param to, // 반드시 출금 외 나머지 잔액을 from 주소로 보내는 정보 있어야함
  */
-async function createRawTransaction(params) {
+async function createRawTransaction({ utxos, to }) {
   try {
-    const {
-      utxos, // [{txid, vout_no}, ...]
-      to, // 반드시 출금 외 나머지 잔액을 from 주소로 보내는 정보 있어야함
-    } = params;
-
     const fParams = utxos.map(
       (el) => `{\"txid\": \"${el.txid}\",\"vout\":${el.vout_no}}`
     );
-    const tParams = to.map((el) => `{\"${el.addr}\":${el.amount}}`);
+    const tParams = to.map((el) => `{\"${el.address}\":${el.amount}}`);
     //const fCmdParam = `"[${txidData}]" `;
     //const toCmdParam = `"[{\"${to}\":${amount}}]"`;
     const fCmdParam = `[${fParams.join(",")}]`;
@@ -71,22 +68,6 @@ async function getUnspentTxOutput(outputInfo) {
     throw err;
   }
 }
-
-/**
- * 트랜잭션 생성
- */
-/*
-async function createRawTransaction(params) {
-  const { from, to } = params;
-  try {
-    const params = [...RPC_OPTION, `createrawtransaction`, from, to];
-    const cmdResult = await executeCommand(BITCOIN_CMD, params, {});
-    return cmdResult;
-  } catch (err) {
-    throw err;
-  }
-}
-*/
 
 /**
  * 해당 트랜잭션이 mempool 에 accept 가능한지 확인

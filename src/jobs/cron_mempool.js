@@ -7,7 +7,9 @@ const { insMempoolInfo } = require("../db/block");
 const { debugLog, getFormatUnixTime, btcToSatoshi } = require("../util");
 const { block } = require("../util/rpc");
 const { getMempoolInfo } = block;
+const { getCacheInstance, MEMPOOL_INFO_LAST } = require("../util/cache");
 
+const cronCache = getCacheInstance();
 const TZ = process.env.TIMEZONE;
 
 const mempoolJob = new CronJob(" 10 * * * * *", getMempool, null, true, TZ);
@@ -50,6 +52,9 @@ async function getMempool() {
     conn = await getConnection();
 
     await insMempoolInfo(conn, params);
+
+    // 수수료 조회시 호출되는 DB 조회 줄이기 위해 mempool 정보 캐싱
+    cronCache.set(MEMPOOL_INFO_LAST, params, 0);
 
     console.log();
     debugLog("MEMPOOL updated", JSON.stringify(mempoolInfo), 10);

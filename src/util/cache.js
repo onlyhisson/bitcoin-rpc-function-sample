@@ -10,6 +10,7 @@ let cronCache = null;
 
 const ADDRESS_LIST = "addressList";
 const UNSPENT_OUTPUTS = "unspentOutputs";
+const MEMPOOL_INFO_LAST = "mempoolInfoLast";
 
 function getCacheInstance() {
   if (!cronCache) {
@@ -24,4 +25,5 @@ module.exports = {
   getCacheInstance,
   ADDRESS_LIST,
   UNSPENT_OUTPUTS,
+  MEMPOOL_INFO_LAST,
 };

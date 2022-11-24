@@ -29,10 +29,15 @@ const controller = require("../controllers/asset.controller");
  *           example: 0.00010000
  *     WithdrawalForm:
  *       required:
+ *         - passPhase
  *         - fee
  *         - toAddresses
  *       type: object
  *       properties:
+ *         passPhase:
+ *           type: string
+ *           desc: 지갑 암호 키
+ *           example: flock bleak bicycle comic palace coral describe enough client symptom arch journey
  *         fee:
  *           type: string
  *           desc: 출금 요청 수수료
@@ -137,13 +142,11 @@ router.get(
  *                    reqInfo:
  *                      type: object
  *                      example:
- *                        label: label2
  *                        from: bc1q2nvzu334xz7r30fse82fwwfqr6aetctx6gtsk4
  *                        to: bc1qkp84yne4jumksnl8rndhvtp8zv0xurkzr4456u
  *                        amount: 0.00010000
- *                        freezeAmt: 0.00004202
  *                        fee: 0.00001551
- *                        willBalance: 0.00015286
+ *                        balance: 0.00015286
  *
  *       500:
  *         content:
@@ -159,48 +162,6 @@ router.post(
   "/coin/address/:addressId/withdraw",
   controller.createWithdrawalCoinReq
 );
-
-/**
- * @swagger
- * /assets/coin/withdraw/{reqId}/confirm:
- *   patch:
- *     summary: 출금 승인 - 관리자
- *     description: 출금 요청을 승인, raw transaction 이 생성되고 바로 mempool에 전달
- *     tags: [Assets]
- *     parameters:
- *       - in: path
- *         name: reqId
- *         required: true
- *         description: 출금 요청건 ID
- *         schema:
- *           type: integer
- *         example: 1
- *     responses:
- *       200:
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     txid:
- *                       type: string
- *                       example: f70f27e87695b31236b720558393925cfcd75d50046012f460df590f174ec765
- *       500:
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               $ref: '#/components/schemas/Error'
- *             example:
- *               success: false
- *               message: error message
- */
-router.patch("/coin/withdraw/:id/confirm", controller.confirmWithdrawalCoinReq);
 
 /**
  * @swagger

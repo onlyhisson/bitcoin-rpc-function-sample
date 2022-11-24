@@ -25,19 +25,10 @@ async function createWithdrawalCoinReq(req, res, next) {
   }
 }
 
-async function confirmWithdrawalCoinReq(req, res, next) {
-  try {
-    const data = await service.confirmWithdrawalCoinReq(req.params.id);
-    successRespFormat(res, { txid: data });
-  } catch (err) {
-    next(err);
-  }
-}
-
 async function getAddressBalance(req, res, next) {
   try {
     const data = await service.getAddressBalance(req.params.addressId);
-    successRespFormat(res, { balace: data });
+    successRespFormat(res, { balance: data });
   } catch (err) {
     next(err);
   }
@@ -45,7 +36,6 @@ async function getAddressBalance(req, res, next) {
 
 module.exports = {
   createWithdrawalCoinReq,
-  confirmWithdrawalCoinReq,
   getAddressBalance,
   getWithdrawalCoinFee,
 };

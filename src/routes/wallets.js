@@ -69,7 +69,7 @@ router.get("/", controller.get);
  *      - in: path
  *        name: walletId
  *        required: true
- *        description: 잔액 조회할 지갑의 ID
+ *        description: 주소를 추가할 지갑의 ID
  *        schema:
  *          type: integer
  *        example: 1
@@ -123,7 +123,7 @@ router.post("/:walletId/address", controller.createAddress);
  *       - in: path
  *         name: walletId
  *         required: true
- *         description: 잔액 조회할 지갑의 ID
+ *         description: 조회할 지갑의 ID
  *         schema:
  *           type: integer
  *         example: 6
