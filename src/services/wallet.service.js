@@ -6,7 +6,6 @@ const {
   createWallet,
   encryptWallet,
   getNewAddress,
-  getWalletLabels,
   getAddressesByLabel,
   getAddressInfo,
   getWalletBalances,
@@ -14,14 +13,13 @@ const {
 const { getBlockCount } = rpc.block;
 const { getCacheInstance, ADDRESS_LIST } = require("../util/cache");
 const { BTC_ADDR_TYPE } = require("../static");
-const { getConnection } = require("../db");
+const { getConnection } = require("../dao");
 const {
   getWalletInfos,
   getWalletAddressList,
   insWallet,
   insWalletAddress,
-  findWalletAddress,
-} = require("../db/wallet");
+} = require("../dao/wallet.dao");
 const { txInOutJob } = require("../jobs");
 
 const cronCache = getCacheInstance();

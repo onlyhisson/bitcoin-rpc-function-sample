@@ -1,11 +1,11 @@
 const CronJob = require("cron").CronJob;
 
-const { getConnection } = require("../db");
-const { findByTxid } = require("../db/block_tx");
+const { getConnection } = require("../dao");
+const { findByTxid } = require("../dao/block_tx.dao");
 const {
   findWithdrawalCoinReq,
   updateWithdrawalCoinReqById,
-} = require("../db/assets");
+} = require("../dao/assets.dao");
 
 const { debugLog, getFormatUnixTime } = require("../util");
 

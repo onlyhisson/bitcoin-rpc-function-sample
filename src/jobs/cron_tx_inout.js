@@ -1,14 +1,14 @@
 const CronJob = require("cron").CronJob;
 
-const { getConnection } = require("../db");
+const { getConnection } = require("../dao");
 const {
   completedTxDetailInfo,
   completedTxDetailInfos,
   findNotUpdatedTxid,
   updatedOurTx,
-} = require("../db/block_tx");
-const { insTxInputInfos } = require("../db/tx_input");
-const { insTxOutputInfos } = require("../db/tx_output");
+} = require("../dao/block_tx.dao");
+const { insTxInputInfos } = require("../dao/tx_input.dao");
+const { insTxOutputInfos } = require("../dao/tx_output.dao");
 
 const { decodeBitcoinRawTx, debugLog } = require("../util");
 const { getCacheInstance, ADDRESS_LIST } = require("../util/cache");

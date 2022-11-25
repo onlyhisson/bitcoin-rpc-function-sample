@@ -1,8 +1,8 @@
 const CronJob = require("cron").CronJob;
 const Big = require("big.js");
 
-const { getConnection } = require("../db");
-const { updateUnspentTxOutputs } = require("../db/tx_output");
+const { getConnection } = require("../dao");
+const { updateUnspentTxOutputs } = require("../dao/tx_output.dao");
 
 const { debugLog } = require("../util");
 const { getCacheInstance, UNSPENT_OUTPUTS } = require("../util/cache");

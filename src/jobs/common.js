@@ -1,6 +1,6 @@
-const { getConnection } = require("../db");
-const { getAddressList } = require("../db/wallet");
-const { findUnspentTxOutputs } = require("../db/tx_output");
+const { getConnection } = require("../dao");
+const { getAddressList } = require("../dao/wallet.dao");
+const { findUnspentTxOutputs } = require("../dao/tx_output.dao");
 const { debugLog, wait } = require("../util");
 const {
   ADDRESS_LIST,

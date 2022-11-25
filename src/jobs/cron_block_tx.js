@@ -1,8 +1,8 @@
 const CronJob = require("cron").CronJob;
 
-const { getConnection } = require("../db");
-const { insBlockInfo, getDbLastBlockInfo } = require("../db/block");
-const { insTxidInfos } = require("../db/block_tx");
+const { getConnection } = require("../dao");
+const { insBlockInfo, getDbLastBlockInfo } = require("../dao/block.dao");
+const { insTxidInfos } = require("../dao/block_tx.dao");
 
 const { debugLog, getFormatUnixTime } = require("../util");
 const { block } = require("../util/rpc");

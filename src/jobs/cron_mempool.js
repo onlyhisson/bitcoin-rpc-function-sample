@@ -1,8 +1,8 @@
 const CronJob = require("cron").CronJob;
 const Big = require("big.js");
 
-const { getConnection } = require("../db");
-const { insMempoolInfo } = require("../db/block");
+const { getConnection } = require("../dao");
+const { insMempoolInfo } = require("../dao/block.dao");
 
 const { debugLog, getFormatUnixTime, btcToSatoshi } = require("../util");
 const { block } = require("../util/rpc");

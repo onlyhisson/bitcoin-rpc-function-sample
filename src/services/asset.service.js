@@ -1,17 +1,17 @@
 const Big = require("big.js");
 
-const { getConnection } = require("../db");
-const { getWalletInfos, findWalletAddress } = require("../db/wallet");
+const { getConnection } = require("../dao");
+const { getWalletInfos, findWalletAddress } = require("../dao/wallet.dao");
 const {
   findUnspentTxOutputs,
   updateUnspentTxOutputs,
-} = require("../db/tx_output");
+} = require("../dao/tx_output.dao");
 const {
   findWithdrawalCoinReq,
   insWithdrawalCoinReq,
   insWithdrawalCoinToAddrs,
-} = require("../db/assets");
-const { getLastMempoolInfo } = require("../db/block");
+} = require("../dao/assets.dao");
+const { getLastMempoolInfo } = require("../dao/block.dao");
 
 const {
   validateCoinAmount,
@@ -40,17 +40,22 @@ const cronCache = getCacheInstance();
 
 async function getWithdrawalCoinFee(params) {
   let conn = null;
+  let toAddressInfos = [];
 
   try {
     const { addressId, toAddresses } = params;
 
+    console.log("toAddresses : ", toAddresses);
+
     // 유효성 : null 확인
-    if (
-      isNull(addressId) ||
-      isNull(toAddresses) ||
-      !Array.isArray(toAddresses)
-    ) {
+    if (isNull(addressId) || isNull(toAddresses)) {
       throw { message: `invalid parameter` };
+    }
+
+    if (!Array.isArray(toAddresses)) {
+      toAddressInfos.push(toAddresses);
+    } else {
+      toAddressInfos = [...toAddresses];
     }
 
     conn = await getConnection();
@@ -64,7 +69,7 @@ async function getWithdrawalCoinFee(params) {
     // 전액 출금 처리시 + 1 할 필요 없으나 현재는 무시한다.
     const fee = await getTxFee(conn, {
       fromCnt: utxos.length,
-      toCnt: toAddresses.length + 1,
+      toCnt: toAddressInfos.length + 1,
     });
 
     return { ...fee };

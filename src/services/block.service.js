@@ -1,6 +1,6 @@
+const { isNull } = require("../util");
 const { block } = require("../util/rpc");
 const { getBlockChainInfo, getBlockCount, getBlockHash, getBlock } = block;
-const { isNull } = require("../util");
 
 async function get() {
   try {

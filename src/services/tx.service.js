@@ -1,13 +1,13 @@
 const Big = require("big.js");
 
+const { isNull } = require("../util");
 const { transaction } = require("../util/rpc");
 const { getRawTransaction, getDecodeRawTransaction } = transaction;
-const { isNull } = require("../util");
 
-const { getConnection } = require("../db");
-const { findTxidIdByTxid } = require("../db/block_tx");
-const { findTxInputByTxidId } = require("../db/tx_input");
-const { findTxOutputByTxidId } = require("../db/tx_output");
+const { getConnection } = require("../dao");
+const { findTxidIdByTxid } = require("../dao/block_tx.dao");
+const { findTxInputByTxidId } = require("../dao/tx_input.dao");
+const { findTxOutputByTxidId } = require("../dao/tx_output.dao");
 
 async function findOneByTxid(txid) {
   try {
