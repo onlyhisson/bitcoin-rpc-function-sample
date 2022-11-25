@@ -29,8 +29,8 @@ app.use("/swagger", express.static(__dirname + "/swagger", {}));
 app.use(`/${SYMBOL}/wallets`, wallets);
 app.use(`/${SYMBOL}/wallet`, wallet);
 app.use(`/${SYMBOL}`, block);
-app.use(`/tx`, transaction);
-app.use(`/assets`, assets);
+app.use(`/${SYMBOL}/tx`, transaction);
+app.use(`/${SYMBOL}/assets`, assets);
 
 app.use((req, res, next) => {
   res.json({

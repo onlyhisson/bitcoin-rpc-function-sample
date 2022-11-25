@@ -52,7 +52,7 @@ const controller = require("../controllers/asset.controller");
 
 /**
  * @swagger
- * /assets/coin/address/{addressId}/withdraw/fee:
+ * /btc/assets/coin/address/{addressId}/withdraw/fee:
  *   get:
  *     summary: 출금 요청 수수료 - 사용자
  *     description: 사용자의 출금 요청건 수수료
@@ -108,7 +108,7 @@ router.get(
 
 /**
  * @swagger
- * /assets/coin/address/{addressId}/withdraw:
+ * /btc/assets/coin/address/{addressId}/withdraw:
  *   post:
  *     summary: 출금 요청 - 사용자
  *     description: 사용자의 출금 요청 정보 저장
@@ -165,7 +165,7 @@ router.post(
 
 /**
  * @swagger
- * /assets/address/{addressId}/balance:
+ * /btc/assets/address/{addressId}/balance:
  *   get:
  *     summary: 잔액 확인
  *     description: 현재 출금 가능 금액, 출금 요청 상태에 따른 금액 정보

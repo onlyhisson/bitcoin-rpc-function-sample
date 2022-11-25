@@ -31,6 +31,94 @@ async function findTxInoutByTxid(txid) {
   let conn = null;
   let nTxInputs = [];
   let nTxOutputs = [];
+  let isCoinbase = false;
+
+  try {
+    if (isNull(txid)) {
+      throw { message: `invalid parameter` };
+    }
+
+    conn = await getConnection();
+
+    const rawTxidData = await getRawTransaction(txid); // 트랙잭션 raw 데이터 조회
+    const decodeRawTxidData = await getDecodeRawTransaction(rawTxidData); // 디코딩
+    const { vin: txInputs, vout: txOutputs } = decodeRawTxidData;
+
+    if (txInputs.length > 0) {
+      const nInputs = txInputs.map((el) => {
+        let res = {};
+        if (el.coinbase) {
+          isCoinbase = true;
+          res = { coinbase: el.coinbase };
+        } else {
+          res = {
+            txid: el.txid,
+            voutIdx: el.vout,
+          };
+        }
+        return res;
+      });
+
+      if (isCoinbase) {
+        nTxInputs.push(nInputs[0]);
+      } else {
+        const inputAddrAmt = await findPrevTxOutputByTxInput(conn, nInputs);
+
+        nTxInputs = inputAddrAmt.map((el) => ({
+          no: el.vout_no,
+          amount: el.amount,
+          address: el.address,
+        }));
+
+        nTxInputs = nTxInputs.sort(function (a, b) {
+          return a.no - b.no;
+        });
+      }
+    }
+    if (txOutputs.length > 0) {
+      nTxOutputs = txOutputs.map((el) => {
+        const res = {
+          no: el.n,
+          amount: new Big(el.value).toFixed(8),
+        };
+        if (el.scriptPubKey.address) {
+          res.address = el.scriptPubKey.address;
+        } else {
+          res.asm = el.scriptPubKey.asm.split(" ")[0];
+        }
+        return res;
+      });
+    }
+
+    const inputAmtSum = isCoinbase
+      ? "0.00000000"
+      : nTxInputs.reduce(reduceSumBigAmount, 0);
+    const outputAmtSum = nTxOutputs.reduce(reduceSumBigAmount, 0);
+    const fee = isCoinbase
+      ? "0.00000000"
+      : new Big(inputAmtSum).minus(new Big(outputAmtSum)).toFixed(8);
+
+    return {
+      txid,
+      fee,
+      input: nTxInputs,
+      output: nTxOutputs,
+    };
+  } catch (err) {
+    console.error("[ERROR] : ", err);
+    throw {
+      message: err.message ? err.message : "error",
+    };
+  } finally {
+    if (conn) conn.release();
+  }
+}
+
+/*
+async function findTxInoutByTxid(txid) {
+  let conn = null;
+  let nTxInputs = [];
+  let nTxOutputs = [];
 
   try {
     if (isNull(txid)) {
@@ -47,9 +135,6 @@ async function findTxInoutByTxid(txid) {
 
     const txInputs = await findTxInputByTxidId(conn, { txidId });
     const txOutputs = await findTxOutputByTxidId(conn, { txidId });
-
-    console.log("txInputs : ", txInputs);
-    console.log("txOutputs : ", txOutputs);
 
     if (txInputs.length > 0) {
       const nInputs = txInputs.map((el) => ({
@@ -98,11 +183,12 @@ async function findTxInoutByTxid(txid) {
     if (conn) conn.release();
   }
 }
+*/
 
 /*
     from : [{a: 1}, {a: 2}, {b: 1}]
     to : {a: [1, 2], b: [1]}
-  */
+ */
 function txidArrToObj(vins) {
   const dupVinsTxs = vins.map((el) => el.txid);
   const setVinsTxs = new Set(dupVinsTxs);
