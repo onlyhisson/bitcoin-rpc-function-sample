@@ -182,6 +182,7 @@ async function createWithdrawalCoinReq(params) {
     await conn.commit(); // 트랜잭션 커밋
 
     return {
+      txid: rawSignedTxInfo.txid,
       from: address,
       to: toAddresses,
       amount,
