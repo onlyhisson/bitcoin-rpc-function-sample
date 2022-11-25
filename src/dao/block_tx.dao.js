@@ -121,7 +121,7 @@ async function findByTxid(conn, params) {
   let condition = [];
 
   let qry = " SELECT * ";
-  qry += " FROM btc_wallet_dev.block_tx";
+  qry += " FROM block_tx";
   qry += " WHERE is_bitstoa = 1 ";
   if (params.txid) {
     qry += " AND txid = ? ";

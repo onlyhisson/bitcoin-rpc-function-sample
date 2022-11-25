@@ -1,6 +1,6 @@
 // 출금 요청 정보 저장
 async function insWithdrawalCoinReq(conn, params) {
-  let qry = " INSERT INTO `btc_wallet_dev`.`coin_withdrawal_req` ( ";
+  let qry = " INSERT INTO `coin_withdrawal_req` ( ";
   qry += "   `addr_id`, `fee`, `status`, `created_at`, `txid` ";
   qry += "   ,`size`, `vsize`,`input_cnt`, `output_cnt`";
   qry += "   ,`input_total_amount`, `output_total_amount`, `start_block_no` ";
@@ -29,8 +29,8 @@ async function insWithdrawalCoinReq(conn, params) {
 async function findWithdrawalCoinReq(conn, params) {
   let conditions = [];
   let qry = " SELECT cwr.*, wa.wallet_id, wa.address ";
-  qry += " FROM btc_wallet_dev.coin_withdrawal_req cwr ";
-  qry += "  INNER JOIN btc_wallet_dev.wallet_address wa ";
+  qry += " FROM coin_withdrawal_req cwr ";
+  qry += "  INNER JOIN wallet_address wa ";
   qry += "  ON cwr.addr_id = wa.id ";
   qry += " WHERE 1=1 ";
   if (params.addrId) {
@@ -59,7 +59,7 @@ async function findWithdrawalCoinReq(conn, params) {
 // status=3, updated_at
 async function updateWithdrawalCoinReqById(conn, params) {
   let condition = [params.updatedAt];
-  let qry = " UPDATE btc_wallet_dev.coin_withdrawal_req ";
+  let qry = " UPDATE coin_withdrawal_req ";
   qry += " SET updated_at = ? ";
   if (params.status) {
     qry += "  , status = ? ";
@@ -96,7 +96,7 @@ async function updateWithdrawalCoinReqById(conn, params) {
 
 async function updateWithdrawalCoinReqByTxid(conn, params) {
   const { updatedAt, status, txid } = params;
-  let qry = " UPDATE btc_wallet_dev.coin_withdrawal_req ";
+  let qry = " UPDATE coin_withdrawal_req ";
   qry += " SET updated_at = ?, status = ?  ";
   qry += " WHERE txid = ? ";
 
@@ -108,7 +108,7 @@ async function updateWithdrawalCoinReqByTxid(conn, params) {
 
 async function updateWithdrawalCoinReqByTxids(conn, params) {
   const { updatedAt, txids, status } = params;
-  let qry = " UPDATE btc_wallet_dev.coin_withdrawal_req ";
+  let qry = " UPDATE coin_withdrawal_req ";
   qry += " SET updated_at = ?, status = ?  ";
   qry += ` WHERE txid IN = ${txids.join(",")} `;
 
@@ -140,8 +140,7 @@ async function insWithdrawalCoinToAddrs(conn, params) {
 
 async function findWithdrawalCoinToInfosByReqId(conn, params) {
   const { reqId } = params;
-  const qry =
-    "SELECT * FROM btc_wallet_dev.coin_withdrawal_to_addr WHERE req_id = ? ";
+  const qry = "SELECT * FROM coin_withdrawal_to_addr WHERE req_id = ? ";
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, [reqId]);
     resolve(rows);

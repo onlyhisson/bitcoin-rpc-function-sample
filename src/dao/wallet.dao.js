@@ -1,7 +1,7 @@
 // 지갑 정보 조회
 async function getWalletInfos(conn, params) {
   let conditions = [];
-  let qry = "SELECT * FROM btc_wallet_dev.wallet_info WHERE type = 0";
+  let qry = "SELECT * FROM wallet_info WHERE type = 0";
   if (params.walletId) {
     qry += " AND id = ?";
     conditions.push(params.walletId);
@@ -16,7 +16,7 @@ async function getWalletInfos(conn, params) {
 // 지갑 추가
 async function insWallet(conn, params) {
   const { name, desc, createdAt } = params;
-  let qry = "INSERT INTO  btc_wallet_dev.wallet_info ";
+  let qry = "INSERT INTO  wallet_info ";
   qry += "(`name`, `desc`, `created_at`) VALUES (?, ?, ?)";
 
   return new Promise(async (resolve, reject) => {
@@ -28,7 +28,7 @@ async function insWallet(conn, params) {
 // 지갑 주소 추가
 async function insWalletAddress(conn, params) {
   const { walletId, label, address, startBlockNo, createdAt } = params;
-  let qry = "INSERT INTO btc_wallet_dev.wallet_address ";
+  let qry = "INSERT INTO wallet_address ";
   qry += " (wallet_id, label, address, start_block_no, created_at) ";
   qry += " VALUES (?, ?, ?, ?, ?)";
 
@@ -47,7 +47,7 @@ async function insWalletAddress(conn, params) {
 // 지갑 주소 조회
 async function findWalletAddress(conn, params) {
   const { addressId: id } = params;
-  const qry = "SELECT * FROM btc_wallet_dev.wallet_address WHERE id = ?";
+  const qry = "SELECT * FROM wallet_address WHERE id = ?";
 
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, [id]);
@@ -66,8 +66,8 @@ async function getWalletAddressList(conn, params) {
   qry += "   ,wa.label ";
   qry += "   ,wi.name ";
   qry += "   ,wi.desc ";
-  qry += " FROM btc_wallet_dev.wallet_address wa ";
-  qry += " INNER JOIN btc_wallet_dev.wallet_info wi ";
+  qry += " FROM wallet_address wa ";
+  qry += " INNER JOIN wallet_info wi ";
   qry += " ON wa.wallet_id = wi.id ";
   qry += " WHERE wi.type = 0 ";
   if (params.walletId) {
@@ -83,7 +83,7 @@ async function getWalletAddressList(conn, params) {
 
 // 전체 주소 목록 조회
 async function getAddressList(conn) {
-  const qry = "SELECT address FROM btc_wallet_dev.wallet_address";
+  const qry = "SELECT address FROM wallet_address";
 
   return new Promise(async (resolve, reject) => {
     const [rows] = await conn.execute(qry, []);

@@ -24,7 +24,7 @@ async function getDbLastBlockInfo(conn) {
 
 // mempool 상태 저장
 async function insMempoolInfo(conn, params) {
-  let qry = " INSERT INTO btc_wallet_dev.mempool_info ( ";
+  let qry = " INSERT INTO mempool_info ( ";
   qry += "  time, tx_cnt, bytes, usage_memory, max_memory, total_fee, ";
   qry += "  tx_min_fee, tx_relay_fee, fee_per_byte, fee_per_tx ";
   qry += " ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ";
@@ -39,8 +39,7 @@ async function insMempoolInfo(conn, params) {
 }
 
 async function getLastMempoolInfo(conn) {
-  const qry =
-    "SELECT * FROM btc_wallet_dev.mempool_info ORDER BY time DESC LIMIT 1";
+  const qry = "SELECT * FROM mempool_info ORDER BY time DESC LIMIT 1";
   return new Promise(async (resolve, reject) => {
     try {
       const [rows] = await conn.execute(qry);

@@ -63,8 +63,8 @@ async function findUnspentTxOutputs(conn, params) {
   qry += "  tout.vout_no, ";
   qry += "  tout.address, ";
   qry += "  tout.amount ";
-  qry += " FROM btc_wallet_dev.tx_output tout ";
-  qry += "  INNER JOIN btc_wallet_dev.block_tx bt ";
+  qry += " FROM tx_output tout ";
+  qry += "  INNER JOIN block_tx bt ";
   qry += "  ON bt.id = tout.txid_id ";
   qry += " WHERE tout.is_spent = 0 ";
   if (params.address) {
@@ -85,7 +85,7 @@ async function findUnspentTxOutputs(conn, params) {
 async function updateUnspentTxOutputs(conn, params) {
   const { isSpent, outputs } = params;
   const ids = outputs.join(",");
-  let qry = `UPDATE btc_wallet_dev.tx_output `;
+  let qry = `UPDATE tx_output `;
   qry += ` SET is_spent = ? WHERE id IN(${ids}) `;
   return new Promise(async (resolve, reject) => {
     try {
