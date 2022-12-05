@@ -20,12 +20,12 @@ const ONCE_OUTPUT_CNT = 10;
 let utxoQueue = [];
 
 // 큐에 쌓은 output 이 mempool 등록 및 confirmed 상태인지 확인
-const spentJob = new CronJob(" 30 * * * * *", checkOutputSpent, null, true, TZ);
+const spentJob = new CronJob(" * * * * * *", checkOutputSpent, null, true, TZ);
 
 // unspent 상태인 tx의 output 들을 큐에 쌓음 - 잔액 개념
 // 큐에 데이터 쌓여 있을 경우 stop, 비워지면 start
 const pushQueueUtxoJob = new CronJob(
-  " * * * * * *",
+  " 30 * * * * *",
   updateUnspentOutputs,
   null,
   true,
